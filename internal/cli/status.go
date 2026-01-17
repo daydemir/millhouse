@@ -94,7 +94,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		// Show open PRDs (compact)
 		if len(open) > 0 {
 			fmt.Println("\nOpen:")
-			maxShow := 2
+			maxShow := 20
 			for i, p := range open {
 				if i >= maxShow {
 					fmt.Printf("  + %d more...\n", len(open)-maxShow)

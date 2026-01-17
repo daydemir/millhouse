@@ -19,8 +19,22 @@ Work on ONE PRD per iteration. Be thorough but focused.
 </prds>
 
 <task>
-Choose ONE PRD from the open list above based on priority (lower number = higher priority).
-Announce: "WORKING ON: {prd-id}"
+Before selecting a PRD, analyze the open PRDs list:
+
+1. **Read notes** - Check each PRD's notes field for:
+   - Previous attempt feedback
+   - Blockers or dependencies (e.g., "Depends on:", "Blocked:")
+   - Readiness indicators (e.g., "READY", "All prerequisites met")
+
+2. **Identify dependencies** - If PRD-A's notes say it depends on PRD-B, work on PRD-B first
+
+3. **Select wisely** - Choose the PRD that:
+   - Has no unmet dependencies on other open PRDs
+   - Has helpful context in notes (not marked blocked)
+   - Would unblock the most other work if completed
+   - Has lower priority number (as tiebreaker)
+
+Announce: "WORKING ON: {prd-id}" with a brief reason for your choice.
 Then implement its acceptance criteria.
 </task>
 
