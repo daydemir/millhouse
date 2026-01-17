@@ -165,7 +165,11 @@ func (h *ConsoleHandler) OnSignal(signal Signal) {
 }
 
 func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
-	h.tokenStats.InputTokens += usage.InputTokens
+	// InputTokens = current context size (snapshot), take max value seen
+	if usage.InputTokens > h.tokenStats.InputTokens {
+		h.tokenStats.InputTokens = usage.InputTokens
+	}
+	// OutputTokens from events ARE incremental
 	h.tokenStats.OutputTokens += usage.OutputTokens
 	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
@@ -189,7 +193,11 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 }
 
 func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
-	// Replace with cumulative value (message_delta provides cumulative counts)
+	// InputTokens: take max if provided (defensive)
+	if usage.InputTokens > h.tokenStats.InputTokens {
+		h.tokenStats.InputTokens = usage.InputTokens
+	}
+	// OutputTokens: replace with cumulative value (message_delta provides cumulative counts)
 	if usage.OutputTokens > 0 {
 		h.tokenStats.OutputTokens = usage.OutputTokens
 	}
