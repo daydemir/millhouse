@@ -140,6 +140,12 @@ func (h *ConsoleHandler) OnText(text string) {
 	h.textBuffer.WriteString(text)
 	h.output.WriteString(text)
 
+	// Check for WORKING ON pattern and highlight
+	if matches := workingOnPattern.FindStringSubmatch(text); matches != nil {
+		h.display.ActivePRD(matches[1])
+		return // Don't double-print
+	}
+
 	// Stream text with subdued styling
 	h.display.ClaudeStreaming(text)
 }
@@ -251,6 +257,7 @@ var (
 	verifiedPattern         = regexp.MustCompile(`###VERIFIED:(.+?)###`)
 	rejectedPattern         = regexp.MustCompile(`###REJECTED:(.+?):(.+?)###`)
 	loopRiskPattern         = regexp.MustCompile(`###LOOP_RISK:(.+?)###`)
+	workingOnPattern        = regexp.MustCompile(`(?:\*\*)?WORKING ON:\s*([a-z0-9-]+)(?:\*\*)?`)
 )
 
 // ParseStream reads the Claude stream-json output and calls the handler

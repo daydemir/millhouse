@@ -62,6 +62,9 @@ type Theme struct {
 	// Dimmed/secondary
 	Dim             *color.Color
 	Bold            *color.Color
+
+	// Active PRD highlighting
+	ActivePRD       *color.Color
 }
 
 // DefaultTheme returns the default color theme
@@ -93,6 +96,9 @@ func DefaultTheme() *Theme {
 		// Text styles
 		Dim:             color.New(color.FgHiBlack),
 		Bold:            color.New(color.Bold),
+
+		// Active PRD
+		ActivePRD:       color.New(color.FgHiGreen, color.Bold),
 	}
 }
 
@@ -117,5 +123,6 @@ func NoColorTheme() *Theme {
 		Info:            noColor,
 		Dim:             noColor,
 		Bold:            noColor,
+		ActivePRD:       noColor,
 	}
 }

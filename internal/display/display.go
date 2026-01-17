@@ -120,10 +120,8 @@ func (d *Display) ClaudeWithTokens(text string, toolCount int, usedTokens, maxTo
 	d.theme.ClaudeTimestamp.Printf("[%s] ", timestamp)
 	d.theme.ClaudeGutter.Print(GutterClaude + " ")
 
-	// Tool badge if any
-	if toolCount > 0 {
-		d.theme.ClaudeToolBadge.Printf("[%d] ", toolCount)
-	}
+	// Tool badge (always show, even when 0)
+	d.theme.ClaudeToolBadge.Printf("[%d] ", toolCount)
 
 	// Token display if provided
 	if usedTokens > 0 && maxTokens > 0 {
@@ -279,6 +277,28 @@ func (d *Display) Summary(open, pending, complete int) {
 	fmt.Println(")")
 }
 
+// SummaryCompact prints a one-line summary (for compact status)
+func (d *Display) SummaryCompact(open, pending, complete int) {
+	total := open + pending + complete
+	fmt.Print("PRDs: ")
+	d.theme.Error.Printf("%d open", open)
+	fmt.Print(", ")
+	d.theme.Warning.Printf("%d pending", pending)
+	fmt.Print(", ")
+	d.theme.Success.Printf("%d complete", complete)
+	fmt.Printf(" (%d total)\n", total)
+}
+
+// PRDStatusCompact prints a one-line PRD status
+func (d *Display) PRDStatusCompact(p prd.PRD) {
+	if p.Passes.IsTrue() {
+		d.theme.Success.Print("  ✓ ")
+	} else {
+		d.theme.Dim.Print("  • ")
+	}
+	d.theme.Bold.Println(p.ID)
+}
+
 // Divider prints a horizontal divider
 func (d *Display) Divider() {
 	d.theme.Dim.Println(strings.Repeat(BoxHorizontal, 50))
@@ -301,6 +321,15 @@ func (d *Display) AgentHeader(agentType, prdID string) {
 
 	fmt.Printf(" Working on: ")
 	d.theme.Bold.Println(prdID)
+}
+
+// ActivePRD prints the active PRD with prominent highlighting
+func (d *Display) ActivePRD(prdID string) {
+	timestamp := time.Now().Format("15:04:05")
+	d.theme.ClaudeTimestamp.Printf("[%s] ", timestamp)
+	d.theme.ClaudeGutter.Print(GutterClaude + " ")
+	fmt.Print("WORKING ON: ")
+	d.theme.ActivePRD.Println(prdID)
 }
 
 // --- Text Utilities ---
@@ -421,4 +450,19 @@ func Signal(signal, details string) {
 // TokenUsage prints token usage information
 func TokenUsage(input, output, total int) {
 	defaultDisplay.TokenUsage(input, output, total)
+}
+
+// SummaryCompact prints a one-line summary
+func SummaryCompact(open, pending, complete int) {
+	defaultDisplay.SummaryCompact(open, pending, complete)
+}
+
+// PRDStatusCompact prints a one-line PRD status
+func PRDStatusCompact(p prd.PRD) {
+	defaultDisplay.PRDStatusCompact(p)
+}
+
+// ActivePRD prints the active PRD with highlighting
+func ActivePRD(prdID string) {
+	defaultDisplay.ActivePRD(prdID)
 }
