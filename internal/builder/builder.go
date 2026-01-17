@@ -8,14 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/suelio/millhouse/internal/config"
 	"github.com/suelio/millhouse/internal/display"
 	"github.com/suelio/millhouse/internal/llm"
 	"github.com/suelio/millhouse/internal/prd"
 	"github.com/suelio/millhouse/internal/prompts"
 )
-
-// TokenThreshold is the max tokens before forced bailout
-const TokenThreshold = 100000
 
 // BuilderResult contains the result of a builder run
 type BuilderResult struct {
@@ -26,7 +24,7 @@ type BuilderResult struct {
 }
 
 // Run executes the builder agent to implement the active PRD's plan
-func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*BuilderResult, error) {
+func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) (*BuilderResult, error) {
 	// Get the active PRD
 	activePRDs := prdFile.GetActivePRDs()
 	if len(activePRDs) == 0 {
@@ -34,19 +32,19 @@ func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*Build
 	}
 
 	activePRD := activePRDs[0]
-	prompt := buildBuilderPrompt(basePath, &activePRD)
+	prompt := buildBuilderPrompt(basePath, &activePRD, cfg)
 
 	display.AgentHeader("builder", "executing plan for "+activePRD.ID)
 
-	return runClaude(ctx, basePath, prompt)
+	return runClaude(ctx, basePath, prompt, cfg)
 }
 
 // RunDiscuss runs an interactive Claude session
-func RunDiscuss(ctx context.Context, basePath string, prdFile *prd.PRDFileData) error {
+func RunDiscuss(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) error {
 	prompt := buildDiscussPrompt(basePath, prdFile)
 
 	// For discuss, we run interactively (not stream-json)
-	return runClaudeInteractive(ctx, basePath, prompt)
+	return runClaudeInteractive(ctx, basePath, prompt, cfg)
 }
 
 // ShouldRunBuilder determines if the builder should run
@@ -55,8 +53,10 @@ func ShouldRunBuilder(prdFile *prd.PRDFileData) bool {
 	return len(prdFile.GetActivePRDs()) > 0
 }
 
-func runClaude(ctx context.Context, basePath, prompt string) (*BuilderResult, error) {
+func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config) (*BuilderResult, error) {
 	result := &BuilderResult{}
+
+	phaseConfig := cfg.GetPhaseConfig("builder")
 
 	claude := llm.NewClaude("")
 
@@ -66,7 +66,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*BuilderResult, er
 
 	opts := llm.ExecuteOptions{
 		Prompt:       prompt,
-		Model:        "sonnet",
+		Model:        phaseConfig.Model,
 		AllowedTools: []string{
 			"Read", "Write", "Edit", "Bash", "Glob", "Grep",
 			"Task", "TodoWrite", "WebSearch", "WebFetch",
@@ -86,7 +86,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*BuilderResult, er
 	defer reader.Close()
 
 	// Create handler with termination support
-	handler := llm.NewConsoleHandlerWithTerminate(TokenThreshold, cancelExec)
+	handler := llm.NewConsoleHandlerWithTerminate(phaseConfig.MaxTokens, cancelExec)
 
 	// Parse the stream
 	llm.ParseStream(reader, handler, cancelExec)
@@ -104,7 +104,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*BuilderResult, er
 	return result, nil
 }
 
-func runClaudeInteractive(ctx context.Context, basePath, prompt string) error {
+func runClaudeInteractive(ctx context.Context, basePath, prompt string, cfg *config.Config) error {
 	claude := llm.NewClaude("")
 
 	opts := llm.ExecuteOptions{
@@ -120,10 +120,12 @@ func runClaudeInteractive(ctx context.Context, basePath, prompt string) error {
 	return claude.ExecuteInteractive(ctx, opts)
 }
 
-func buildBuilderPrompt(basePath string, activePRD *prd.PRD) string {
+func buildBuilderPrompt(basePath string, activePRD *prd.PRD, cfg *config.Config) string {
+	phaseConfig := cfg.GetPhaseConfig("builder")
+
 	promptMD := readFileContent(prd.GetMillhousePath(basePath, prd.PromptFile))
 	activePRDJSON, _ := json.MarshalIndent(activePRD, "", "  ")
-	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 20)
+	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), phaseConfig.ProgressLines)
 	planContent := readFileContent(prd.GetPlanPath(basePath, activePRD.ID))
 
 	return prompts.BuildBuilderPrompt(prompts.BuilderData{

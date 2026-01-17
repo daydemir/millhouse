@@ -8,14 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/suelio/millhouse/internal/config"
 	"github.com/suelio/millhouse/internal/display"
 	"github.com/suelio/millhouse/internal/llm"
 	"github.com/suelio/millhouse/internal/prd"
 	"github.com/suelio/millhouse/internal/prompts"
 )
-
-// TokenThreshold is the max tokens before forced bailout
-const TokenThreshold = 80000
 
 // PlannerResult contains the result of a planner run
 type PlannerResult struct {
@@ -30,7 +28,7 @@ type PlannerResult struct {
 }
 
 // Run executes the planner agent to select a PRD and create a plan
-func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*PlannerResult, error) {
+func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) (*PlannerResult, error) {
 	result := &PlannerResult{}
 
 	// Check if we should run
@@ -49,11 +47,11 @@ func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*Plann
 		return nil, fmt.Errorf("failed to create plans directory: %w", err)
 	}
 
-	prompt := buildPlannerPrompt(basePath, prdFile)
+	prompt := buildPlannerPrompt(basePath, prdFile, cfg)
 
 	display.AgentHeader("planner", "selecting PRD and creating plan")
 
-	execResult, err := runClaude(ctx, basePath, prompt)
+	execResult, err := runClaude(ctx, basePath, prompt, cfg)
 	if err != nil {
 		result.Error = err
 		return result, err
@@ -94,8 +92,10 @@ func ShouldRunPlanner(prdFile *prd.PRDFileData) bool {
 	return true
 }
 
-func runClaude(ctx context.Context, basePath, prompt string) (*PlannerResult, error) {
+func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config) (*PlannerResult, error) {
 	result := &PlannerResult{}
+
+	phaseConfig := cfg.GetPhaseConfig("planner")
 
 	claude := llm.NewClaude("")
 
@@ -105,7 +105,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*PlannerResult, er
 
 	opts := llm.ExecuteOptions{
 		Prompt:       prompt,
-		Model:        "sonnet",
+		Model:        phaseConfig.Model,
 		AllowedTools: []string{
 			"Read", "Write", "Edit", "Bash", "Glob", "Grep",
 			"Task", "TodoWrite", "WebSearch", "WebFetch",
@@ -125,7 +125,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*PlannerResult, er
 	defer reader.Close()
 
 	// Create handler with termination support
-	handler := llm.NewConsoleHandlerWithTerminate(TokenThreshold, cancelExec)
+	handler := llm.NewConsoleHandlerWithTerminate(phaseConfig.MaxTokens, cancelExec)
 
 	// Parse the stream
 	llm.ParseStream(reader, handler, cancelExec)
@@ -143,11 +143,13 @@ func runClaude(ctx context.Context, basePath, prompt string) (*PlannerResult, er
 	return result, nil
 }
 
-func buildPlannerPrompt(basePath string, prdFile *prd.PRDFileData) string {
+func buildPlannerPrompt(basePath string, prdFile *prd.PRDFileData, cfg *config.Config) string {
+	phaseConfig := cfg.GetPhaseConfig("planner")
+
 	promptMD := readFileContent(prd.GetMillhousePath(basePath, prd.PromptFile))
 	openPRDs := prdFile.GetOpenPRDs()
 	openPRDsJSON, _ := json.MarshalIndent(openPRDs, "", "  ")
-	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 20)
+	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), phaseConfig.ProgressLines)
 
 	return prompts.BuildPlannerPrompt(prompts.PlannerData{
 		PromptMD:        promptMD,

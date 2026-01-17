@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/suelio/millhouse/internal/builder"
+	"github.com/suelio/millhouse/internal/config"
 	"github.com/suelio/millhouse/internal/display"
 	"github.com/suelio/millhouse/internal/prd"
 )
@@ -45,6 +46,13 @@ func runDiscuss(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load PRDs: %w", err)
 	}
 
+	// Load configuration
+	cfg, err := config.Load(cwd)
+	if err != nil {
+		display.Warning(fmt.Sprintf("Failed to load config: %v, using defaults", err))
+		cfg = config.DefaultConfig()
+	}
+
 	// Create context for the session
 	ctx := context.Background()
 
@@ -53,7 +61,7 @@ func runDiscuss(cmd *cobra.Command, args []string) error {
 	display.Divider()
 
 	// Run interactive Claude session
-	if err := builder.RunDiscuss(ctx, cwd, prdFile); err != nil {
+	if err := builder.RunDiscuss(ctx, cwd, prdFile, cfg); err != nil {
 		return fmt.Errorf("discuss session error: %w", err)
 	}
 

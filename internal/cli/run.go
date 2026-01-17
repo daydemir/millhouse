@@ -9,10 +9,23 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/suelio/millhouse/internal/builder"
+	"github.com/suelio/millhouse/internal/config"
 	"github.com/suelio/millhouse/internal/display"
 	"github.com/suelio/millhouse/internal/planner"
 	"github.com/suelio/millhouse/internal/prd"
 	"github.com/suelio/millhouse/internal/reviewer"
+)
+
+var (
+	// Model override flags
+	plannerModelFlag  string
+	builderModelFlag  string
+	reviewerModelFlag string
+
+	// Token limit override flags
+	plannerTokensFlag  int
+	builderTokensFlag  int
+	reviewerTokensFlag int
 )
 
 var runCmd = &cobra.Command{
@@ -32,6 +45,16 @@ The loop continues until N iterations complete or no open PRDs remain.`,
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+
+	// Model override flags
+	runCmd.Flags().StringVar(&plannerModelFlag, "planner-model", "", "Override planner model (haiku, sonnet, opus)")
+	runCmd.Flags().StringVar(&builderModelFlag, "builder-model", "", "Override builder model (haiku, sonnet, opus)")
+	runCmd.Flags().StringVar(&reviewerModelFlag, "reviewer-model", "", "Override reviewer model (haiku, sonnet, opus)")
+
+	// Token limit override flags
+	runCmd.Flags().IntVar(&plannerTokensFlag, "planner-max-tokens", 0, "Override planner token limit (10000-200000)")
+	runCmd.Flags().IntVar(&builderTokensFlag, "builder-max-tokens", 0, "Override builder token limit (10000-200000)")
+	runCmd.Flags().IntVar(&reviewerTokensFlag, "reviewer-max-tokens", 0, "Override reviewer token limit (10000-200000)")
 }
 
 func runRun(cmd *cobra.Command, args []string) error {
@@ -53,6 +76,17 @@ func runRun(cmd *cobra.Command, args []string) error {
 		d.Info("Run 'mill init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
+
+	// Load configuration
+	cfg, err := config.Load(cwd)
+	if err != nil {
+		d.Warning(fmt.Sprintf("Failed to load config: %v, using defaults", err))
+		cfg = config.DefaultConfig()
+	}
+
+	// Apply CLI flag overrides
+	cfg.ApplyOverrides(plannerModelFlag, builderModelFlag, reviewerModelFlag,
+		plannerTokensFlag, builderTokensFlag, reviewerTokensFlag)
 
 	// Create context for the run
 	ctx := context.Background()
@@ -84,7 +118,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 		if planner.ShouldRunPlanner(prdFile) {
 			d.SubHeader("Phase 1: Planner")
 
-			planResult, err := planner.Run(ctx, cwd, prdFile)
+			planResult, err := planner.Run(ctx, cwd, prdFile, cfg)
 			if err != nil {
 				d.Error(fmt.Sprintf("Planner error: %v", err))
 				continue
@@ -125,7 +159,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 				d.Info(fmt.Sprintf("Executing plan for PRD: %s", activePRDs[0].ID))
 			}
 
-			buildResult, err := builder.Run(ctx, cwd, prdFile)
+			buildResult, err := builder.Run(ctx, cwd, prdFile, cfg)
 			if err != nil {
 				d.Error(fmt.Sprintf("Builder error: %v", err))
 			} else {
@@ -151,7 +185,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 			d.SubHeader("Phase 3: Reviewer")
 			d.AnalysisStart()
 
-			reviewResult, err := reviewer.Run(ctx, cwd, prdFile, i)
+			reviewResult, err := reviewer.Run(ctx, cwd, prdFile, i, cfg)
 			if err != nil {
 				d.Warning(fmt.Sprintf("Reviewer error: %v", err))
 			} else {

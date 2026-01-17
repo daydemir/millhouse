@@ -7,14 +7,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/suelio/millhouse/internal/config"
 	"github.com/suelio/millhouse/internal/display"
 	"github.com/suelio/millhouse/internal/llm"
 	"github.com/suelio/millhouse/internal/prd"
 	"github.com/suelio/millhouse/internal/prompts"
 )
-
-// TokenThreshold is the max tokens before forced bailout (smaller for reviewer)
-const TokenThreshold = 80000
 
 // ReviewerResult contains the result of a reviewer run
 type ReviewerResult struct {
@@ -26,14 +24,14 @@ type ReviewerResult struct {
 }
 
 // Run executes the reviewer agent
-func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iteration int) (*ReviewerResult, error) {
+func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iteration int, cfg *config.Config) (*ReviewerResult, error) {
 	result := &ReviewerResult{}
 
-	prompt := buildReviewerPrompt(basePath, prdFile, iteration)
+	prompt := buildReviewerPrompt(basePath, prdFile, iteration, cfg)
 
 	display.AgentHeader("reviewer", "review")
 
-	execResult, err := runClaude(ctx, basePath, prompt)
+	execResult, err := runClaude(ctx, basePath, prompt, cfg)
 	if err != nil {
 		result.Error = err
 		return result, err
@@ -77,7 +75,9 @@ func ShouldRunReviewer(prdFile *prd.PRDFileData) bool {
 	return false
 }
 
-func runClaude(ctx context.Context, basePath, prompt string) (*llm.ConsoleHandler, error) {
+func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config) (*llm.ConsoleHandler, error) {
+	phaseConfig := cfg.GetPhaseConfig("reviewer")
+
 	claude := llm.NewClaude("")
 
 	// Create a cancellable context for this execution
@@ -86,7 +86,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*llm.ConsoleHandle
 
 	opts := llm.ExecuteOptions{
 		Prompt:       prompt,
-		Model:        "sonnet",
+		Model:        phaseConfig.Model,
 		AllowedTools: []string{
 			"Read", "Write", "Edit", "Bash", "Glob", "Grep",
 			"Task", "TodoWrite", "WebSearch", "WebFetch",
@@ -106,7 +106,7 @@ func runClaude(ctx context.Context, basePath, prompt string) (*llm.ConsoleHandle
 	defer reader.Close()
 
 	// Create handler with termination support
-	handler := llm.NewConsoleHandlerWithTerminate(TokenThreshold, cancelExec)
+	handler := llm.NewConsoleHandlerWithTerminate(phaseConfig.MaxTokens, cancelExec)
 
 	// Parse the stream
 	llm.ParseStream(reader, handler, cancelExec)
@@ -119,9 +119,11 @@ func runClaude(ctx context.Context, basePath, prompt string) (*llm.ConsoleHandle
 	return handler, nil
 }
 
-func buildReviewerPrompt(basePath string, prdFile *prd.PRDFileData, iteration int) string {
+func buildReviewerPrompt(basePath string, prdFile *prd.PRDFileData, iteration int, cfg *config.Config) string {
+	phaseConfig := cfg.GetPhaseConfig("reviewer")
+
 	allPRDsJSON, _ := json.MarshalIndent(prdFile.PRDs, "", "  ")
-	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 200)
+	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), phaseConfig.ProgressLines)
 
 	// Collect active plans
 	activePlans := make(map[string]string)
