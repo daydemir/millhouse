@@ -88,3 +88,18 @@ Before signaling complete, verify:
 
 Signal: ###ANALYSIS_COMPLETE###
 </completion_checklist>
+
+<context_management>
+Millhouse monitors your token usage. You have a smaller budget than executor.
+
+SELF-MONITORING:
+- If > 30 tool calls without completing analysis, wrap up quickly
+- Focus on MUST-DO items (verify pending, update stuck PRDs)
+- Skip nice-to-haves if context running low
+
+EARLY COMPLETION:
+If running low on context, prioritize:
+1. Verify/reject any pending PRDs (changes state)
+2. Add notes to stuck PRDs (unblocks next iteration)
+3. Signal ###ANALYSIS_COMPLETE### even if cross-pollination skipped
+</context_management>

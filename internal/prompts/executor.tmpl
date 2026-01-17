@@ -80,3 +80,30 @@ When blocked (need human help):
 - Follow existing code patterns (check prompt.md)
 - Do NOT continue to next PRD after signaling
 </constraints>
+
+<context_management>
+Millhouse monitors your token usage and will terminate at 100K tokens as a safety net.
+
+QUALITY DEGRADATION CURVE:
+| Context Usage | Quality | Your State |
+|---------------|---------|------------|
+| 0-30% (0-30K) | PEAK | Thorough, comprehensive |
+| 30-50% (30-50K) | GOOD | Confident, solid work |
+| 50-70% (50-70K) | DEGRADING | Efficiency mode begins |
+| 70%+ (70K+) | POOR | Rushed, minimal, error-prone |
+
+SELF-MONITORING HEURISTICS:
+1. Tool call count: if > 50 without task completion, you're burning context
+2. Repeated errors: 3+ retries of same fix = stuck, bail out
+3. File reading volume: if > 20 files read without progress, context bloated
+
+PROACTIVE BAILOUT (at ~80K tokens):
+1. Append current progress to progress.md
+2. Update PRD notes with: what completed, what remains, what learned
+3. Signal: ###BAILOUT:context_preservation###
+
+Valid bailout reasons:
+- context_preservation - Approaching token limit
+- partial_completion - Some work done, need fresh context
+- stuck_loop - Repeated failures, need different approach
+</context_management>

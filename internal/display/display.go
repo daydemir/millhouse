@@ -221,6 +221,7 @@ func (d *Display) Signal(signal, details string) {
 
 // TokenUsage prints token usage information
 func (d *Display) TokenUsage(input, output, total int) {
+	fmt.Println() // Ensure new line after Claude output
 	timestamp := time.Now().Format("15:04:05")
 	percentage := float64(total) / 100000 * 100
 
@@ -231,23 +232,11 @@ func (d *Display) TokenUsage(input, output, total int) {
 		statusColor = d.theme.Warning
 	}
 
-	// Format tokens compactly (e.g., "32" or "1.5K" or "100K")
-	tokenStr := formatTokenCount(total)
+	// Always use K for both values for consistency
+	tokenStr := fmt.Sprintf("%.1fK", float64(total)/1000)
 
-	// Compact format: [HH:MM:SS | tokens/100K] ✓
-	d.theme.ClaudeTimestamp.Print("[")
-	d.theme.ClaudeTimestamp.Print(timestamp)
-	statusColor.Printf(" | %s/100K", tokenStr)
-	d.theme.ClaudeTimestamp.Print("] ")
-	statusColor.Printf("%s\n", SymbolCheck)
-}
-
-// formatTokenCount formats token count compactly
-func formatTokenCount(tokens int) string {
-	if tokens >= 1000 {
-		return fmt.Sprintf("%.1fK", float64(tokens)/1000)
-	}
-	return fmt.Sprintf("%d", tokens)
+	// Compact format: [HH:MM:SS | tokens/100K] ✓ - unified color
+	statusColor.Printf("[%s | %s/100K] %s\n", timestamp, tokenStr, SymbolCheck)
 }
 
 // PRDStatus prints PRD status with color coding

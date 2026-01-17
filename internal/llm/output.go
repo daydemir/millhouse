@@ -42,6 +42,7 @@ type OutputHandler interface {
 	OnDone(result string)
 	OnSignal(signal Signal)
 	OnTokenUsage(usage TokenStats)
+	OnTokenUsageCumulative(usage TokenStats) // For message_delta cumulative counts
 	GetSignals() []Signal
 	GetTokenStats() TokenStats
 	GetOutput() string
@@ -181,6 +182,32 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 	}
 }
 
+func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
+	// Replace with cumulative value (message_delta provides cumulative counts)
+	if usage.OutputTokens > 0 {
+		h.tokenStats.OutputTokens = usage.OutputTokens
+	}
+	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
+
+	// Display token usage with styled output
+	h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
+
+	// Reset tool count after displaying
+	h.toolCount = 0
+
+	// Check threshold and trigger termination if exceeded
+	if h.tokenStats.TotalTokens >= h.tokenThreshold {
+		h.shouldStop = true
+		h.signals = append(h.signals, Signal{
+			Type:    SignalBailout,
+			Details: "token limit exceeded",
+		})
+		if h.onTerminate != nil {
+			h.onTerminate()
+		}
+	}
+}
+
 func (h *ConsoleHandler) GetSignals() []Signal {
 	return h.signals
 }
@@ -247,6 +274,15 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 		}
 
 		switch event.Type {
+		case "message_start":
+			// Handle initial input tokens from message_start
+			if event.Message != nil && event.Message.Usage != nil {
+				handler.OnTokenUsage(TokenStats{
+					InputTokens:  event.Message.Usage.InputTokens,
+					OutputTokens: event.Message.Usage.OutputTokens,
+				})
+			}
+
 		case "content_block_delta":
 			if event.Delta != nil && event.Delta.Type == "text_delta" {
 				handler.OnText(event.Delta.Text)
@@ -254,9 +290,9 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 			}
 
 		case "message_delta":
+			// message_delta provides cumulative output_tokens, not incremental
 			if event.Usage != nil {
-				handler.OnTokenUsage(TokenStats{
-					InputTokens:  event.Usage.InputTokens,
+				handler.OnTokenUsageCumulative(TokenStats{
 					OutputTokens: event.Usage.OutputTokens,
 				})
 			}
