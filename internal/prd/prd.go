@@ -13,19 +13,28 @@ const (
 	ProgressFile = "progress.md"
 	PromptFile   = "prompt.md"
 	EvidenceDir  = "evidence"
+	PlansDir     = "plans"
 )
 
-// PassesStatus represents the tri-state passes field
-// false = not attempted or needs work
-// "pending" = agent claims complete, awaiting analyzer
-// true = analyzer confirmed complete
+// PassesStatus represents the quad-state passes field
+// false = open, not attempted or needs work
+// "active" = planner selected, has plan, builder working on it
+// "pending" = builder claims complete, awaiting reviewer
+// true = reviewer confirmed complete
 type PassesStatus struct {
-	Value interface{} // bool or string "pending"
+	Value interface{} // bool or string "active"/"pending"
 }
 
 func (p *PassesStatus) IsFalse() bool {
 	if b, ok := p.Value.(bool); ok {
 		return !b
+	}
+	return false
+}
+
+func (p *PassesStatus) IsActive() bool {
+	if s, ok := p.Value.(string); ok {
+		return s == "active"
 	}
 	return false
 }
@@ -46,6 +55,10 @@ func (p *PassesStatus) IsTrue() bool {
 
 func (p *PassesStatus) SetFalse() {
 	p.Value = false
+}
+
+func (p *PassesStatus) SetActive() {
+	p.Value = "active"
 }
 
 func (p *PassesStatus) SetPending() {
@@ -69,14 +82,14 @@ func (p *PassesStatus) UnmarshalJSON(data []byte) error {
 
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		if s == "pending" {
+		if s == "active" || s == "pending" {
 			p.Value = s
 			return nil
 		}
 		return fmt.Errorf("invalid passes string value: %s", s)
 	}
 
-	return fmt.Errorf("passes must be bool or 'pending'")
+	return fmt.Errorf("passes must be bool or 'active'/'pending'")
 }
 
 // PRD represents a single Product Requirements Document
@@ -87,6 +100,7 @@ type PRD struct {
 	Priority           int          `json:"priority"`
 	Passes             PassesStatus `json:"passes"`
 	Notes              string       `json:"notes"`
+	ActivePlan         string       `json:"activePlan,omitempty"` // Path to plan file when active
 }
 
 // PRDFile represents the prd.json file structure
@@ -183,4 +197,42 @@ func GetMillhousePath(basePath, filename string) string {
 // GetEvidencePath returns the path to an evidence file for a PRD
 func GetEvidencePath(basePath, prdID string) string {
 	return filepath.Join(basePath, MillhouseDir, EvidenceDir, prdID+"-evidence.md")
+}
+
+// GetActivePRDs returns PRDs where passes="active"
+func (p *PRDFileData) GetActivePRDs() []PRD {
+	var active []PRD
+	for _, prd := range p.PRDs {
+		if prd.Passes.IsActive() {
+			active = append(active, prd)
+		}
+	}
+	return active
+}
+
+// GetPlanPath returns the path to a plan file for a PRD
+func GetPlanPath(basePath, prdID string) string {
+	return filepath.Join(basePath, MillhouseDir, PlansDir, prdID+"-plan.md")
+}
+
+// EnsurePlansDir creates the plans directory if it doesn't exist
+func EnsurePlansDir(basePath string) error {
+	plansPath := filepath.Join(basePath, MillhouseDir, PlansDir)
+	return os.MkdirAll(plansPath, 0755)
+}
+
+// DeletePlan removes a plan file for a PRD
+func DeletePlan(basePath, prdID string) error {
+	planPath := GetPlanPath(basePath, prdID)
+	if err := os.Remove(planPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to delete plan file: %w", err)
+	}
+	return nil
+}
+
+// PlanExists checks if a plan file exists for a PRD
+func PlanExists(basePath, prdID string) bool {
+	planPath := GetPlanPath(basePath, prdID)
+	_, err := os.Stat(planPath)
+	return err == nil
 }

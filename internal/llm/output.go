@@ -19,6 +19,10 @@ const (
 	SignalVerified         = "VERIFIED"
 	SignalRejected         = "REJECTED"
 	SignalLoopRisk         = "LOOP_RISK"
+	// Planner signals
+	SignalPlanComplete = "PLAN_COMPLETE"
+	SignalPlanSkipped  = "PLAN_SKIPPED"
+	SignalPlanUpdated  = "PLAN_UPDATED"
 )
 
 // Signal represents a detected signal from agent output
@@ -253,7 +257,9 @@ func isTerminalSignal(s Signal) bool {
 	return s.Type == SignalPRDComplete ||
 		s.Type == SignalBailout ||
 		s.Type == SignalBlocked ||
-		s.Type == SignalAnalysisComplete
+		s.Type == SignalAnalysisComplete ||
+		s.Type == SignalPlanComplete ||
+		s.Type == SignalPlanSkipped
 }
 
 // Signal patterns (Millhouse-specific)
@@ -266,6 +272,10 @@ var (
 	rejectedPattern         = regexp.MustCompile(`###REJECTED:(.+?):(.+?)###`)
 	loopRiskPattern         = regexp.MustCompile(`###LOOP_RISK:(.+?)###`)
 	workingOnPattern        = regexp.MustCompile(`(?:\*\*)?WORKING ON:\s*([a-z0-9-]+)(?:\*\*)?`)
+	// Planner patterns
+	planCompletePattern = regexp.MustCompile(`###PLAN_COMPLETE:(.+?)###`)
+	planSkippedPattern  = regexp.MustCompile(`###PLAN_SKIPPED:(.+?)###`)
+	planUpdatedPattern  = regexp.MustCompile(`###PLAN_UPDATED:(.+?)###`)
 )
 
 // ParseStream reads the Claude stream-json output and calls the handler
@@ -405,6 +415,36 @@ func checkSignals(text string, handler OutputHandler) {
 		for _, match := range matches {
 			handler.OnSignal(Signal{
 				Type:  SignalLoopRisk,
+				PRDID: strings.TrimSpace(match[1]),
+			})
+		}
+	}
+
+	// Check for PLAN_COMPLETE
+	if matches := planCompletePattern.FindAllStringSubmatch(text, -1); matches != nil {
+		for _, match := range matches {
+			handler.OnSignal(Signal{
+				Type:  SignalPlanComplete,
+				PRDID: strings.TrimSpace(match[1]),
+			})
+		}
+	}
+
+	// Check for PLAN_SKIPPED
+	if matches := planSkippedPattern.FindAllStringSubmatch(text, -1); matches != nil {
+		for _, match := range matches {
+			handler.OnSignal(Signal{
+				Type:    SignalPlanSkipped,
+				Details: strings.TrimSpace(match[1]),
+			})
+		}
+	}
+
+	// Check for PLAN_UPDATED
+	if matches := planUpdatedPattern.FindAllStringSubmatch(text, -1); matches != nil {
+		for _, match := range matches {
+			handler.OnSignal(Signal{
+				Type:  SignalPlanUpdated,
 				PRDID: strings.TrimSpace(match[1]),
 			})
 		}

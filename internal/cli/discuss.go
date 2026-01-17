@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/suelio/millhouse/internal/builder"
 	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/executor"
 	"github.com/suelio/millhouse/internal/prd"
 )
 
@@ -53,7 +53,7 @@ func runDiscuss(cmd *cobra.Command, args []string) error {
 	display.Divider()
 
 	// Run interactive Claude session
-	if err := executor.RunDiscuss(ctx, cwd, prdFile); err != nil {
+	if err := builder.RunDiscuss(ctx, cwd, prdFile); err != nil {
 		return fmt.Errorf("discuss session error: %w", err)
 	}
 

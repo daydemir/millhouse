@@ -1,4 +1,4 @@
-package executor
+package builder
 
 import (
 	"context"
@@ -17,28 +17,26 @@ import (
 // TokenThreshold is the max tokens before forced bailout
 const TokenThreshold = 100000
 
-// ExecutorResult contains the result of an executor run
-type ExecutorResult struct {
-	Signals     []Signal
+// BuilderResult contains the result of a builder run
+type BuilderResult struct {
+	Signals     []llm.Signal
 	TotalTokens int
 	Output      string
 	Error       error
 }
 
-// RunExecutor runs the executor agent to work on PRDs
-func RunExecutor(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*ExecutorResult, error) {
-	prompt := buildExecutorPrompt(basePath, prdFile)
+// Run executes the builder agent to implement the active PRD's plan
+func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData) (*BuilderResult, error) {
+	// Get the active PRD
+	activePRDs := prdFile.GetActivePRDs()
+	if len(activePRDs) == 0 {
+		return &BuilderResult{}, fmt.Errorf("no active PRD found")
+	}
 
-	display.AgentHeader("executor", "selecting PRD")
+	activePRD := activePRDs[0]
+	prompt := buildBuilderPrompt(basePath, &activePRD)
 
-	return runClaude(ctx, basePath, prompt)
-}
-
-// RunAnalyzer runs the analyzer agent
-func RunAnalyzer(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iteration int) (*ExecutorResult, error) {
-	prompt := buildAnalyzerPrompt(basePath, prdFile, iteration)
-
-	display.AgentHeader("analyzer", "review")
+	display.AgentHeader("builder", "executing plan for "+activePRD.ID)
 
 	return runClaude(ctx, basePath, prompt)
 }
@@ -51,8 +49,14 @@ func RunDiscuss(ctx context.Context, basePath string, prdFile *prd.PRDFileData) 
 	return runClaudeInteractive(ctx, basePath, prompt)
 }
 
-func runClaude(ctx context.Context, basePath, prompt string) (*ExecutorResult, error) {
-	result := &ExecutorResult{}
+// ShouldRunBuilder determines if the builder should run
+// It should run if there's an active PRD with a plan
+func ShouldRunBuilder(prdFile *prd.PRDFileData) bool {
+	return len(prdFile.GetActivePRDs()) > 0
+}
+
+func runClaude(ctx context.Context, basePath, prompt string) (*BuilderResult, error) {
+	result := &BuilderResult{}
 
 	claude := llm.NewClaude("")
 
@@ -87,18 +91,10 @@ func runClaude(ctx context.Context, basePath, prompt string) (*ExecutorResult, e
 	// Parse the stream
 	llm.ParseStream(reader, handler, cancelExec)
 
-	// Convert handler results to ExecutorResult
+	// Convert handler results to BuilderResult
 	result.Output = handler.GetOutput()
 	result.TotalTokens = handler.GetTokenStats().TotalTokens
-
-	// Convert llm.Signal to executor.Signal
-	for _, sig := range handler.GetSignals() {
-		result.Signals = append(result.Signals, Signal{
-			Type:    sig.Type,
-			Details: sig.Details,
-			PRDID:   sig.PRDID,
-		})
-	}
+	result.Signals = handler.GetSignals()
 
 	fmt.Println() // Ensure newline after output
 	if result.TotalTokens > 0 {
@@ -124,28 +120,18 @@ func runClaudeInteractive(ctx context.Context, basePath, prompt string) error {
 	return claude.ExecuteInteractive(ctx, opts)
 }
 
-func buildExecutorPrompt(basePath string, prdFile *prd.PRDFileData) string {
+func buildBuilderPrompt(basePath string, activePRD *prd.PRD) string {
 	promptMD := readFileContent(prd.GetMillhousePath(basePath, prd.PromptFile))
-	openPRDs := prdFile.GetOpenPRDs()
-	openPRDsJSON, _ := json.MarshalIndent(openPRDs, "", "  ")
+	activePRDJSON, _ := json.MarshalIndent(activePRD, "", "  ")
 	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 20)
+	planContent := readFileContent(prd.GetPlanPath(basePath, activePRD.ID))
 
-	return prompts.BuildExecutorPrompt(prompts.ExecutorData{
+	return prompts.BuildBuilderPrompt(prompts.BuilderData{
 		PromptMD:        promptMD,
-		OpenPRDsJSON:    string(openPRDsJSON),
+		ActivePRDJSON:   string(activePRDJSON),
+		PlanContent:     planContent,
 		ProgressContent: progressContent,
 		Timestamp:       time.Now().Format("2006-01-02 15:04"),
-	})
-}
-
-func buildAnalyzerPrompt(basePath string, prdFile *prd.PRDFileData, iteration int) string {
-	allPRDsJSON, _ := json.MarshalIndent(prdFile.PRDs, "", "  ")
-	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 200)
-
-	return prompts.BuildAnalyzerPrompt(prompts.AnalyzerData{
-		AllPRDsJSON:     string(allPRDsJSON),
-		ProgressContent: progressContent,
-		Iteration:       iteration,
 	})
 }
 
@@ -190,14 +176,4 @@ func readLastLines(path string, n int) string {
 	}
 
 	return strings.Join(lines[len(lines)-n:], "\n")
-}
-
-func formatCriteria(criteria []string) string {
-	var result strings.Builder
-	for _, c := range criteria {
-		result.WriteString("- ")
-		result.WriteString(c)
-		result.WriteString("\n")
-	}
-	return result.String()
 }

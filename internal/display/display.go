@@ -248,6 +248,9 @@ func (d *Display) PRDStatus(p prd.PRD) {
 	} else if p.Passes.IsPending() {
 		status = "pending"
 		statusColor = d.theme.Warning
+	} else if p.Passes.IsActive() {
+		status = "active"
+		statusColor = d.theme.Info
 	} else {
 		status = "open"
 		statusColor = d.theme.Error
@@ -270,6 +273,21 @@ func (d *Display) Summary(open, pending, complete int) {
 	d.theme.Bold.Printf("\nTotal: %d ", total)
 	fmt.Print("(")
 	d.theme.Error.Printf("%d open", open)
+	fmt.Print(", ")
+	d.theme.Warning.Printf("%d pending", pending)
+	fmt.Print(", ")
+	d.theme.Success.Printf("%d complete", complete)
+	fmt.Println(")")
+}
+
+// SummaryExtended prints a summary line with active count
+func (d *Display) SummaryExtended(open, active, pending, complete int) {
+	total := open + active + pending + complete
+	d.theme.Bold.Printf("\nTotal: %d ", total)
+	fmt.Print("(")
+	d.theme.Error.Printf("%d open", open)
+	fmt.Print(", ")
+	d.theme.Info.Printf("%d active", active)
 	fmt.Print(", ")
 	d.theme.Warning.Printf("%d pending", pending)
 	fmt.Print(", ")
@@ -311,6 +329,13 @@ func (d *Display) AgentHeader(agentType, prdID string) {
 	d.theme.ClaudeGutter.Printf("%s ", GutterClaude)
 
 	switch agentType {
+	case "planner":
+		d.theme.Warning.Printf("[%s]", agentType)
+	case "builder":
+		d.theme.Info.Printf("[%s]", agentType)
+	case "reviewer":
+		d.theme.AnalyzerText.Printf("[%s]", agentType)
+	// Legacy support
 	case "executor":
 		d.theme.Info.Printf("[%s]", agentType)
 	case "analyzer":
@@ -465,4 +490,9 @@ func PRDStatusCompact(p prd.PRD) {
 // ActivePRD prints the active PRD with highlighting
 func ActivePRD(prdID string) {
 	defaultDisplay.ActivePRD(prdID)
+}
+
+// SummaryExtended prints a summary line with active count
+func SummaryExtended(open, active, pending, complete int) {
+	defaultDisplay.SummaryExtended(open, active, pending, complete)
 }

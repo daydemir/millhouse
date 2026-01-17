@@ -1,0 +1,171 @@
+package reviewer
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/suelio/millhouse/internal/display"
+	"github.com/suelio/millhouse/internal/llm"
+	"github.com/suelio/millhouse/internal/prd"
+	"github.com/suelio/millhouse/internal/prompts"
+)
+
+// TokenThreshold is the max tokens before forced bailout (smaller for reviewer)
+const TokenThreshold = 80000
+
+// ReviewerResult contains the result of a reviewer run
+type ReviewerResult struct {
+	Verified    []string // PRD IDs that were verified (promoted to true)
+	Rejected    []string // PRD IDs that were rejected (reverted to false)
+	LoopRisk    []string // PRD IDs at risk of looping
+	PlanUpdated []string // PRD IDs whose plans were updated (bailout handling)
+	Error       error
+}
+
+// Run executes the reviewer agent
+func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iteration int) (*ReviewerResult, error) {
+	result := &ReviewerResult{}
+
+	prompt := buildReviewerPrompt(basePath, prdFile, iteration)
+
+	display.AgentHeader("reviewer", "review")
+
+	execResult, err := runClaude(ctx, basePath, prompt)
+	if err != nil {
+		result.Error = err
+		return result, err
+	}
+
+	// Process signals from the reviewer output
+	for _, signal := range execResult.GetSignals() {
+		switch signal.Type {
+		case llm.SignalVerified:
+			result.Verified = append(result.Verified, signal.PRDID)
+		case llm.SignalRejected:
+			result.Rejected = append(result.Rejected, signal.PRDID)
+		case llm.SignalLoopRisk:
+			result.LoopRisk = append(result.LoopRisk, signal.PRDID)
+		case llm.SignalPlanUpdated:
+			result.PlanUpdated = append(result.PlanUpdated, signal.PRDID)
+		}
+	}
+
+	return result, nil
+}
+
+// ShouldRunReviewer determines if the reviewer should run
+// It should run if there are pending PRDs, active PRDs (for bailout handling), or open PRDs
+func ShouldRunReviewer(prdFile *prd.PRDFileData) bool {
+	// Always run if there are pending PRDs
+	if len(prdFile.GetPendingPRDs()) > 0 {
+		return true
+	}
+
+	// Also run if there are active PRDs (to handle bailouts)
+	if len(prdFile.GetActivePRDs()) > 0 {
+		return true
+	}
+
+	// Also run if there are open PRDs (to cross-pollinate observations)
+	if len(prdFile.GetOpenPRDs()) > 0 {
+		return true
+	}
+
+	return false
+}
+
+func runClaude(ctx context.Context, basePath, prompt string) (*llm.ConsoleHandler, error) {
+	claude := llm.NewClaude("")
+
+	// Create a cancellable context for this execution
+	execCtx, cancelExec := context.WithCancel(ctx)
+	defer cancelExec()
+
+	opts := llm.ExecuteOptions{
+		Prompt:       prompt,
+		Model:        "sonnet",
+		AllowedTools: []string{
+			"Read", "Write", "Edit", "Bash", "Glob", "Grep",
+			"Task", "TodoWrite", "WebSearch", "WebFetch",
+		},
+		ContextFiles: []string{
+			prd.GetMillhousePath(basePath, prd.PRDFile),
+			prd.GetMillhousePath(basePath, prd.ProgressFile),
+			prd.GetMillhousePath(basePath, prd.PromptFile),
+		},
+		WorkDir: basePath,
+	}
+
+	reader, err := claude.Execute(execCtx, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	// Create handler with termination support
+	handler := llm.NewConsoleHandlerWithTerminate(TokenThreshold, cancelExec)
+
+	// Parse the stream
+	llm.ParseStream(reader, handler, cancelExec)
+
+	fmt.Println() // Ensure newline after output
+	if handler.GetTokenStats().TotalTokens > 0 {
+		display.TokenUsage(0, 0, handler.GetTokenStats().TotalTokens)
+	}
+
+	return handler, nil
+}
+
+func buildReviewerPrompt(basePath string, prdFile *prd.PRDFileData, iteration int) string {
+	allPRDsJSON, _ := json.MarshalIndent(prdFile.PRDs, "", "  ")
+	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 200)
+
+	// Collect active plans
+	activePlans := make(map[string]string)
+	for _, p := range prdFile.GetActivePRDs() {
+		planPath := prd.GetPlanPath(basePath, p.ID)
+		if content := readFileContent(planPath); content != "" {
+			activePlans[p.ID] = content
+		}
+	}
+
+	// Also include plans for pending PRDs (they still have plans until verified/rejected)
+	for _, p := range prdFile.GetPendingPRDs() {
+		planPath := prd.GetPlanPath(basePath, p.ID)
+		if content := readFileContent(planPath); content != "" {
+			activePlans[p.ID] = content
+		}
+	}
+
+	return prompts.BuildReviewerPrompt(prompts.ReviewerData{
+		AllPRDsJSON:     string(allPRDsJSON),
+		ActivePlans:     activePlans,
+		ProgressContent: progressContent,
+		Iteration:       iteration,
+	})
+}
+
+func readFileContent(path string) string {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(content)
+}
+
+func readLastLines(path string, n int) string {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	lines := strings.Split(string(content), "\n")
+	if len(lines) <= n {
+		return string(content)
+	}
+
+	return strings.Join(lines[len(lines)-n:], "\n")
+}

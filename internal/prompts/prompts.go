@@ -10,45 +10,66 @@ import (
 var templates embed.FS
 
 var (
-	executorTmpl *template.Template
-	analyzerTmpl *template.Template
+	plannerTmpl  *template.Template
+	builderTmpl  *template.Template
+	reviewerTmpl *template.Template
 	discussTmpl  *template.Template
 )
 
 func init() {
-	executorTmpl = template.Must(template.ParseFS(templates, "executor.tmpl"))
-	analyzerTmpl = template.Must(template.ParseFS(templates, "analyzer.tmpl"))
+	plannerTmpl = template.Must(template.ParseFS(templates, "planner.tmpl"))
+	builderTmpl = template.Must(template.ParseFS(templates, "builder.tmpl"))
+	reviewerTmpl = template.Must(template.ParseFS(templates, "reviewer.tmpl"))
 	discussTmpl = template.Must(template.ParseFS(templates, "discuss.tmpl"))
 }
 
-// ExecutorData contains data for the executor prompt template
-type ExecutorData struct {
-	PromptMD        string
-	OpenPRDsJSON    string
-	ProgressContent string
-	Timestamp       string
+// PlannerData contains data for the planner prompt template
+type PlannerData struct {
+	PromptMD        string // Codebase patterns from prompt.md
+	OpenPRDsJSON    string // JSON of open PRDs (passes=false)
+	ProgressContent string // Last lines of progress.md
+	Timestamp       string // Current timestamp
 }
 
-// BuildExecutorPrompt renders the executor prompt template
-func BuildExecutorPrompt(data ExecutorData) string {
+// BuildPlannerPrompt renders the planner prompt template
+func BuildPlannerPrompt(data PlannerData) string {
 	var buf bytes.Buffer
-	if err := executorTmpl.Execute(&buf, data); err != nil {
+	if err := plannerTmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()
 }
 
-// AnalyzerData contains data for the analyzer prompt template
-type AnalyzerData struct {
-	AllPRDsJSON     string
-	ProgressContent string
-	Iteration       int
+// BuilderData contains data for the builder prompt template
+type BuilderData struct {
+	PromptMD        string // Codebase patterns from prompt.md
+	ActivePRDJSON   string // JSON of the active PRD being worked on
+	PlanContent     string // Content of the plan file
+	ProgressContent string // Last lines of progress.md
+	Timestamp       string // Current timestamp
 }
 
-// BuildAnalyzerPrompt renders the analyzer prompt template
-func BuildAnalyzerPrompt(data AnalyzerData) string {
+// BuildBuilderPrompt renders the builder prompt template
+func BuildBuilderPrompt(data BuilderData) string {
 	var buf bytes.Buffer
-	if err := analyzerTmpl.Execute(&buf, data); err != nil {
+	if err := builderTmpl.Execute(&buf, data); err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
+// ReviewerData contains data for the reviewer prompt template
+type ReviewerData struct {
+	AllPRDsJSON     string            // JSON of ALL PRDs
+	ActivePlans     map[string]string // Map of PRD ID to plan content
+	ProgressContent string            // Last lines of progress.md
+	Iteration       int               // Current iteration count
+}
+
+// BuildReviewerPrompt renders the reviewer prompt template
+func BuildReviewerPrompt(data ReviewerData) string {
+	var buf bytes.Buffer
+	if err := reviewerTmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()
