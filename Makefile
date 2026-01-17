@@ -1,6 +1,6 @@
 .PHONY: build install clean test
 
-VERSION ?= 0.1.7
+VERSION ?= 0.1.8
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -X github.com/suelio/millhouse/internal/cli.Version=$(VERSION) \

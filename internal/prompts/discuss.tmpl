@@ -68,6 +68,37 @@ BAD PRDs (too big, will cause bailouts):
 Break large features into multiple small PRDs with priority ordering.
 </prd_quality_rules>
 
+<uncertainty_handling>
+NEVER write uncertainty into acceptance criteria. Criteria must be binary pass/fail.
+
+When you encounter uncertainty about:
+- Scope of changes ("should this include X?")
+- Which approach to take ("delete vs skip vs mark deprecated")
+- What "done" looks like ("all tests pass" vs "tests compile")
+- Dependencies or prerequisites
+
+DO THIS:
+1. Stop before writing the PRD
+2. Use AskUserQuestion to present options and get clarity
+3. Only after user responds, write unambiguous criteria
+
+EXAMPLES:
+
+❌ BAD (ambiguous):
+- "Tests pass (or skip if not ready)"
+- "Remove unused code or mark deprecated"
+- "Handle errors appropriately"
+
+✅ GOOD (binary):
+- "All test files compile without errors"
+- "Tests marked with XCTSkip include a TODO comment explaining why"
+- "API returns 400 with message 'Invalid email format' for malformed emails"
+
+When unsure, ASK. Example question:
+"Should tests that can't run yet be deleted or skipped with XCTSkip?"
+Options: [Delete them, Skip with XCTSkip, Ask me case-by-case]
+</uncertainty_handling>
+
 <codebase_mapping>
 If prompt.md is empty/placeholder, offer to explore codebase and document:
 - Directory structure and purposes
@@ -80,4 +111,6 @@ If prompt.md is empty/placeholder, offer to explore codebase and document:
 <instructions>
 Start by asking what the user wants to work on today.
 Be helpful and proactive about suggesting improvements.
+When drafting acceptance criteria, ask clarifying questions if anything is ambiguous.
+Never write hedging language - get clarity first.
 </instructions>
