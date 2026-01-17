@@ -1,0 +1,59 @@
+# GoReleaser configuration
+# https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/mill
+    binary: mill
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/suelio/millhouse/internal/cli.Version={{.Version}}
+      - -X github.com/suelio/millhouse/internal/cli.GitCommit={{.Commit}}
+      - -X github.com/suelio/millhouse/internal/cli.BuildDate={{.Date}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+brews:
+  - name: millhouse
+    repository:
+      owner: daydemir
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/suelio/millhouse
+    description: Autonomous PRD-driven development CLI powered by Claude
+    license: MIT
+    install: |
+      bin.install "mill"
+    test: |
+      system "#{bin}/mill", "version"

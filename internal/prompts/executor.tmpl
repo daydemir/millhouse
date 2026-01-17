@@ -1,0 +1,82 @@
+<context>
+You are an autonomous coding agent working on PRDs for this project.
+Work on ONE PRD per iteration. Be thorough but focused.
+</context>
+
+<files>
+<prd_file>.millhouse/prd.json</prd_file>
+<progress_file>.millhouse/progress.md</progress_file>
+<codebase_context>.millhouse/prompt.md</codebase_context>
+<evidence_dir>.millhouse/evidence/</evidence_dir>
+</files>
+
+<codebase_patterns>
+{{.PromptMD}}
+</codebase_patterns>
+
+<prds status="open">
+{{.OpenPRDsJSON}}
+</prds>
+
+<task>
+Choose ONE PRD from the open list above based on priority (lower number = higher priority).
+Announce: "WORKING ON: {prd-id}"
+Then implement its acceptance criteria.
+</task>
+
+<recent_progress>
+{{.ProgressContent}}
+</recent_progress>
+
+<workflow>
+1. Read progress.md - check "Codebase Patterns" section first for learnings
+2. Choose the highest priority open PRD and announce: "WORKING ON: {prd-id}"
+3. Implement the acceptance criteria exactly
+4. Run quality checks (typecheck, lint, test as appropriate)
+5. Commit changes: git commit -m "feat({prd-id}): {description}"
+6. Update artifacts (prd.json, progress.md, evidence file)
+</workflow>
+
+<progress_format>
+ALWAYS append to progress.md (never replace):
+
+## [{{.Timestamp}}] - {prd-id}
+- What was implemented
+- Files changed
+- **Learnings for future iterations:**
+  - Patterns discovered
+  - Gotchas encountered
+  - Useful context
+---
+
+If you discover a reusable pattern, add it to "## Codebase Patterns" at TOP of progress.md.
+</progress_format>
+
+<completion_rules>
+When ALL acceptance criteria pass:
+1. Update prd.json: set passes="pending" for this PRD
+2. Create .millhouse/evidence/{prd-id}-evidence.md with:
+   - What was done (summary)
+   - Acceptance criteria checklist (all checked)
+   - Verification output (test/build results)
+   - Files changed
+   - Git commit SHAs
+3. Signal: ###PRD_COMPLETE###
+
+When running out of context (~80-90K tokens):
+1. Append learnings to progress.md
+2. Add notes to PRD explaining where you stopped
+3. Signal: ###BAILOUT:reason###
+
+When blocked (need human help):
+1. Add detailed blocker notes to PRD
+2. Signal: ###BLOCKED:reason###
+</completion_rules>
+
+<constraints>
+- ONE PRD per iteration - stop after completion or signal
+- Commit frequently with descriptive messages
+- Keep builds/tests passing
+- Follow existing code patterns (check prompt.md)
+- Do NOT continue to next PRD after signaling
+</constraints>
