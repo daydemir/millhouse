@@ -37,6 +37,21 @@ Then implement its acceptance criteria.
 6. Update artifacts (prd.json, progress.md, evidence file)
 </workflow>
 
+<prd_shortcuts>
+Use these git aliases for efficient PRD queries (saves tokens vs parsing prd.json):
+
+| Command | Returns | Use When |
+|---------|---------|----------|
+| `git open` | All open PRDs (passes=false) | Selecting work |
+| `git closed` | Completed PRDs (passes=true) | Checking history |
+
+Example:
+```bash
+git open   # Quick list of work to do
+git closed # What's been completed
+```
+</prd_shortcuts>
+
 <progress_format>
 ALWAYS append to progress.md (never replace):
 
@@ -53,6 +68,23 @@ If you discover a reusable pattern, add it to "## Codebase Patterns" at TOP of p
 </progress_format>
 
 <completion_rules>
+VERIFICATION HONESTY:
+When verifying acceptance criteria, you MUST explicitly flag any:
+- Partial verifications ("compiled but couldn't run tests")
+- Assumptions ("if X works, Y should too")
+- Workarounds ("skipped this check because...")
+- Indirect evidence ("build succeeded so code must be correct")
+
+Format flags in your evidence file:
+```markdown
+## Verification Flags (for Analyzer Review)
+- ⚠️ PARTIAL: Test file compiled but wasn't executed (no test framework in swiftc)
+- ⚠️ ASSUMPTION: Build success implies correctness
+- ⚠️ INDIRECT: Verified via xcodebuild, not direct test run
+```
+
+The analyzer WILL review these flags. Do not assume partial verification is sufficient.
+
 When ALL acceptance criteria pass:
 1. Update prd.json: set passes="pending" for this PRD
 2. Create .millhouse/evidence/{prd-id}-evidence.md with:
@@ -107,3 +139,43 @@ Valid bailout reasons:
 - partial_completion - Some work done, need fresh context
 - stuck_loop - Repeated failures, need different approach
 </context_management>
+
+<subagent_usage>
+Use sub-agents liberally to preserve your context for decision-making.
+
+MODEL SELECTION (cheapest that works):
+| Model | Cost | Use For |
+|-------|------|---------|
+| haiku | Cheapest | Read-only exploration, file search, simple queries |
+| sonnet | Medium | Code analysis, implementation (DEFAULT) |
+| opus | Expensive | Complex reasoning, architectural decisions |
+
+DECISION TREE:
+1. Read-only exploration or search? → haiku
+2. Straightforward implementation? → sonnet
+3. Deep reasoning or high stakes? → opus
+4. Unsure? → sonnet
+
+DELEGATE TO SUB-AGENT:
+- File exploration (saves 10-50 tool calls)
+- Parallel independent searches
+- Analysis that doesn't need your full context
+- Tasks requiring >10 tool calls
+
+DO YOURSELF:
+- Tasks requiring conversation history
+- Quick single-file reads
+- Final synthesis/decisions
+
+EXAMPLES:
+```
+# Exploring codebase - use haiku
+Task(subagent_type="Explore", model="haiku", prompt="Find all AuthService imports")
+
+# Analyzing patterns - use sonnet
+Task(subagent_type="general-purpose", model="sonnet", prompt="Analyze error handling in this module")
+
+# Critical architecture - use opus
+Task(subagent_type="Plan", model="opus", prompt="Design database migration strategy")
+```
+</subagent_usage>

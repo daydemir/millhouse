@@ -29,6 +29,18 @@ For each PRD where passes="pending":
 - Read .millhouse/evidence/{prd-id}-evidence.md
 - Verify EACH acceptance criterion was actually met
 - Check git log for commits
+
+CRITICAL: Check for "Verification Flags" in evidence files.
+If executor flagged partial/indirect verification:
+- Assess whether the verification is actually sufficient
+- If insufficient: REJECT with specific next steps
+- If acceptable: Document WHY in your verification notes
+
+Common insufficient patterns to catch:
+- "Compiled successfully" ≠ "Works correctly"
+- "Build passed" ≠ "Acceptance criteria met"
+- "Only failed on different file" ≠ "This file is verified"
+
 - MUST take action:
   - All verified:
     1. Update prd.json: set passes=true
@@ -78,6 +90,21 @@ Think like a system trying to stay productive:
 
 </responsibilities>
 
+<prd_shortcuts>
+Use these git aliases for efficient PRD queries (saves tokens vs parsing prd.json):
+
+| Command | Returns | Use When |
+|---------|---------|----------|
+| `git open` | All open PRDs (passes=false) | Checking remaining work |
+| `git closed` | Completed PRDs (passes=true) | Reviewing history |
+
+Example:
+```bash
+git open   # What's still to do
+git closed # What's been completed
+```
+</prd_shortcuts>
+
 <completion_checklist>
 Before signaling complete, verify:
 [ ] At least one file was modified (prd.json, progress.md, or prompt.md)
@@ -103,3 +130,10 @@ If running low on context, prioritize:
 2. Add notes to stuck PRDs (unblocks next iteration)
 3. Signal ###ANALYSIS_COMPLETE### even if cross-pollination skipped
 </context_management>
+
+<subagent_usage>
+Use sub-agents to verify acceptance criteria in parallel.
+Prefer haiku for most verification checks - it's 10x cheaper than sonnet.
+
+Example: Task(subagent_type="Explore", model="haiku", prompt="Verify tests pass for feature X")
+</subagent_usage>

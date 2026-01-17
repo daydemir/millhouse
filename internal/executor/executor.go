@@ -63,7 +63,10 @@ func runClaude(ctx context.Context, basePath, prompt string) (*ExecutorResult, e
 	opts := llm.ExecuteOptions{
 		Prompt:       prompt,
 		Model:        "sonnet",
-		AllowedTools: []string{"Read", "Write", "Edit", "Bash", "Glob", "Grep"},
+		AllowedTools: []string{
+			"Read", "Write", "Edit", "Bash", "Glob", "Grep",
+			"Task", "TodoWrite", "WebSearch", "WebFetch",
+		},
 		ContextFiles: []string{
 			prd.GetMillhousePath(basePath, prd.PRDFile),
 			prd.GetMillhousePath(basePath, prd.ProgressFile),
@@ -137,7 +140,7 @@ func buildExecutorPrompt(basePath string, prdFile *prd.PRDFileData) string {
 
 func buildAnalyzerPrompt(basePath string, prdFile *prd.PRDFileData, iteration int) string {
 	allPRDsJSON, _ := json.MarshalIndent(prdFile.PRDs, "", "  ")
-	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 50)
+	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), 200)
 
 	return prompts.BuildAnalyzerPrompt(prompts.AnalyzerData{
 		AllPRDsJSON:     string(allPRDsJSON),
