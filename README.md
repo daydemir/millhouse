@@ -40,11 +40,10 @@ Milhouse builds on the Ralph Loop pattern for autonomous coding agents.
 ## Table of Contents
 
 - [Quick Overview](#quick-overview)
-- [Why Milhouse](#why-milhouse)
+- [How mil run Works](#how-mil-run-works)
 - [Prerequisites & Installation](#prerequisites--installation)
 - [Quick Start](#quick-start)
 - [Basic Commands](#basic-commands)
-- [Token Usage & Costs](#token-usage--costs)
 - [Next Steps](#next-steps)
 - [License](#license)
 
@@ -61,6 +60,57 @@ Milhouse automates development through three phases:
 **PRD States:** Open → Active → Pending → Complete
 
 Each iteration cycles through all phases. Run `mil run 1` for one iteration, `mil run 5` for five, etc.
+
+## How `mil run` Works
+
+Milhouse orchestrates three autonomous agents in a resilient feedback loop. Each iteration completes a full cycle, with work flowing through PRD states: **Open → Active → Pending → Complete**.
+
+### The Planner Agent
+
+**Goals:**
+- Select one open PRD based on dependencies, priority, and readiness
+- Explore the codebase to understand implementation context
+- Create a detailed plan with specific files, functions, and verification steps
+- Map acceptance criteria to implementation steps
+
+The Planner only runs when no active PRD exists. It uses sub-agents to discover patterns and writes plans to `.milhouse/plans/{prd-id}-plan.md`.
+
+### The Builder Agent
+
+**Goals:**
+- Execute the Planner's steps sequentially
+- Verify each step (typecheck, lint, test as specified)
+- Commit changes incrementally with descriptive messages
+- Document discoveries and patterns in `progress.md`
+- Create evidence files showing what was completed and how it was verified
+
+The Builder monitors token usage and gracefully bails out at ~100K tokens to preserve context. When bailing, it documents progress so work can resume in the next iteration. Upon completion, it creates `.milhouse/evidence/{prd-id}-evidence.md` with verification flags (PARTIAL, INDIRECT, ASSUMPTION) to signal any limitations.
+
+### The Reviewer Agent
+
+**Core mandate:** Never leave state unchanged—always modify something to improve the situation.
+
+**Goals:**
+- Verify pending PRDs meet all acceptance criteria (not just "build succeeded")
+- Assess verification flags and reject insufficient work
+- Update plans when the Builder bails out (mark completed steps, clarify remaining work)
+- Detect infinite loops (PRDs stuck in the same state for 2+ iterations)
+- Cross-pollinate learnings across PRDs to prevent repeated failures
+
+The Reviewer catches incomplete verifications, preserves progress from bailouts, and actively breaks stuck cycles by suggesting alternative approaches or reprioritizing work.
+
+### Resilience & Iteration
+
+The system handles interruptions and improves over time through:
+
+- **Token-based bailout**: Agents stop before hitting limits, preserving context for resumption
+- **Plan lifecycle**: Plans are updated with actual progress, not discarded on failure
+- **Evidence flags**: Builders honestly flag verification limitations; Reviewers assess sufficiency
+- **Loop detection**: Reviewer identifies stuck cycles and forces state changes
+- **Cross-pollination**: Discoveries from one PRD improve all future PRDs via `progress.md`
+- **State machine**: Enforces workflow (only one active PRD at a time, clear transitions)
+
+Each iteration refines understanding. Failed attempts add context for the next try. Progress accumulates across iterations, making the system progressively smarter about your codebase.
 
 ## Prerequisites & Installation
 
@@ -135,29 +185,6 @@ mil run 1 --builder-model opus
 ```
 
 For detailed configuration options, see [CONFIGURATION.md](docs/CONFIGURATION.md).
-
-## Token Usage & Costs
-
-**Per-phase estimates:**
-- **Planner:** 15-30K tokens
-- **Builder:** 30-80K tokens
-- **Reviewer:** 10-20K tokens
-
-**Real-world costs** (Claude 3.5 Sonnet @ $3/$15 per 1M tokens):
-
-| Command | Token Range | Cost |
-|---------|---|---|
-| `mil run 1` | 55-130K | ~$0.40-$1.30 |
-| `mil run 5` | 275-650K | ~$2.00-$6.50 |
-| `mil run 10` | 550-1.3M | ~$4.00-$13.00 |
-
-**Optimize costs:**
-- Use `sonnet` for faster, cheaper iterations
-- Use `opus` for complex or critical work
-- Start with `mil run 1` to validate before scaling
-- Configure `maxTokens` per phase in config
-
-See [CONFIGURATION.md](docs/CONFIGURATION.md) for all optimization options.
 
 ## Next Steps
 
