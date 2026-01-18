@@ -44,6 +44,7 @@ Milhouse builds on the Ralph Loop pattern for autonomous coding agents.
 - [Prerequisites & Installation](#prerequisites--installation)
 - [Quick Start](#quick-start)
 - [Basic Commands](#basic-commands)
+- [Common Pitfalls](#common-pitfalls)
 - [Next Steps](#next-steps)
 - [License](#license)
 
@@ -161,6 +162,39 @@ mil run 1 --builder-model opus
 ```
 
 For detailed configuration options, see [CONFIGURATION.md](docs/CONFIGURATION.md).
+
+## Common Pitfalls
+
+### False Blockers
+
+**Problem:** Milhouse sometimes thinks it's blocked when it's not. Agents may signal `###BLOCKED###` for issues that could actually be automated or resolved with better context.
+
+**Solution:** Use `mil chat` to investigate and resolve:
+
+```bash
+mil chat "Some PRDs seem blocked - are they actually blocked or can we automate them?"
+```
+
+In the chat session:
+1. Discuss which PRDs appear blocked and why
+2. Determine if they're truly blocked or just need more context
+3. Let Milhouse flesh out the PRDs with specific guidance on how to proceed
+4. Update acceptance criteria to be more specific and actionable
+5. Add hints in PRD notes about how to overcome perceived blockers
+
+The next `mil run` will use this additional context to attempt the work with better understanding.
+
+### Breaking Down Large Features
+
+**Problem:** Large, monolithic PRDs (e.g., "Implement user authentication") often hit token limits and never complete.
+
+**Solution:** Use `mil chat` to break them into smaller, focused PRDs:
+- "Create User database schema with migrations"
+- "Implement password hashing utility"
+- "Add login API endpoint"
+- "Add logout functionality"
+
+Each small PRD can complete in one or two iterations, making progress more reliable.
 
 ## Next Steps
 
