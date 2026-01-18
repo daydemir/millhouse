@@ -179,18 +179,17 @@ func (h *ConsoleHandler) OnSignal(signal Signal) {
 	}
 }
 
-func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
-	// InputTokens = current context size (snapshot), take max value seen
-	if usage.InputTokens > h.tokenStats.InputTokens {
-		h.tokenStats.InputTokens = usage.InputTokens
+// updateInputTokens updates input tokens (takes max since it's a snapshot)
+func (h *ConsoleHandler) updateInputTokens(input int) {
+	if input > h.tokenStats.InputTokens {
+		h.tokenStats.InputTokens = input
 	}
-	// OutputTokens from events ARE incremental
-	h.tokenStats.OutputTokens += usage.OutputTokens
+}
+
+// recalculateTotalAndCheckThreshold recalculates total tokens and checks threshold
+func (h *ConsoleHandler) recalculateTotalAndCheckThreshold() {
 	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
-	// NOTE: No display here - token info is displayed with text in OnText()
-
-	// Check threshold and trigger termination if exceeded
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
 		h.shouldStop = true
 		h.signals = append(h.signals, Signal{
@@ -203,29 +202,19 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 	}
 }
 
+func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
+	h.updateInputTokens(usage.InputTokens)
+	// OutputTokens from events ARE incremental
+	h.tokenStats.OutputTokens += usage.OutputTokens
+	h.recalculateTotalAndCheckThreshold()
+}
+
 func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
-	// Update token stats
-	if usage.InputTokens > h.tokenStats.InputTokens {
-		h.tokenStats.InputTokens = usage.InputTokens
-	}
+	h.updateInputTokens(usage.InputTokens)
 	if usage.OutputTokens > 0 {
 		h.tokenStats.OutputTokens = usage.OutputTokens
 	}
-	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
-
-	// NOTE: No display here - token info is displayed with text in OnText()
-
-	// Check threshold and trigger termination if exceeded
-	if h.tokenStats.TotalTokens >= h.tokenThreshold {
-		h.shouldStop = true
-		h.signals = append(h.signals, Signal{
-			Type:    SignalBailout,
-			Details: "token limit exceeded",
-		})
-		if h.onTerminate != nil {
-			h.onTerminate()
-		}
-	}
+	h.recalculateTotalAndCheckThreshold()
 }
 
 func (h *ConsoleHandler) GetSignals() []Signal {
@@ -327,6 +316,7 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 			// message_delta provides cumulative output_tokens, not incremental
 			if event.Usage != nil {
 				handler.OnTokenUsageCumulative(TokenStats{
+					InputTokens:  event.Usage.InputTokens,
 					OutputTokens: event.Usage.OutputTokens,
 				})
 			}
