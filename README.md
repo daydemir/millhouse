@@ -14,7 +14,7 @@
 > - Claude Code Max plan recommended (consumes significant tokens)
 > - Start with small iterations to understand behavior
 
-Milhouse is an autonomous Claude Code runner built on the concept of Ralph Loops. You create Product Requirement Documents (PRDs) by calling `mil chat`, then run `mil run` and Milhouse spawns agents to plan, build, and review work to complete your PRDs.
+Milhouse is an autonomous Claude Code runner built on the concept of Ralph Loops that attempts to improve as it iterates. You create Product Requirement Documents (PRDs) by calling `mil chat`, then run `mil run` and Milhouse spawns agents to plan, build, and review work to complete your PRDs.
 
 ## Inspiration
 
@@ -65,14 +65,7 @@ Each iteration cycles through all phases. Run `mil run 1` for one iteration, `mi
 
 ### Creating PRDs with `mil chat`
 
-Before work begins, you use `mil chat` to define what needs to be built. This is an interactive session where Milhouse acts as your product manager:
-
-- **Asks clarifying questions** to understand your requirements
-- **Creates well-structured PRDs** with clear acceptance criteria
-- **Edits existing PRDs** based on your feedback or new information
-- **Updates system prompts** to teach Milhouse about your codebase patterns
-
-Think of `mil chat` as a conversation with an AI product manager who translates your ideas into actionable PRDs. You can create new requirements, refine existing ones, or provide context that will help the autonomous agents work more effectively.
+Use `mil chat` to define what needs to be built. Milhouse acts as your product manager, asking clarifying questions to create well-structured PRDs with clear acceptance criteria. You can also edit existing PRDs or update system prompts to teach Milhouse about your codebase patterns.
 
 ### Autonomous Execution with `mil run`
 
@@ -80,50 +73,28 @@ Once PRDs are defined, `mil run` orchestrates three autonomous agents in a resil
 
 ### The Planner Agent
 
-**Goals:**
-- Select one open PRD based on dependencies, priority, and readiness
-- Explore the codebase to understand implementation context
-- Create a detailed plan with specific files, functions, and verification steps
-- Map acceptance criteria to implementation steps
-
-The Planner only runs when no active PRD exists. It uses sub-agents to discover patterns and writes plans to `.milhouse/plans/{prd-id}-plan.md`.
+Selects one open PRD based on dependencies and priority, explores the codebase to understand implementation context, and creates a detailed plan mapping acceptance criteria to specific steps. Plans are written to `.milhouse/plans/{prd-id}-plan.md`.
 
 ### The Builder Agent
 
-**Goals:**
-- Execute the Planner's steps sequentially
-- Verify each step (typecheck, lint, test as specified)
-- Commit changes incrementally with descriptive messages
-- Document discoveries and patterns in `progress.md`
-- Create evidence files showing what was completed and how it was verified
-
-The Builder monitors token usage and gracefully bails out at ~100K tokens to preserve context. When bailing, it documents progress so work can resume in the next iteration. Upon completion, it creates `.milhouse/evidence/{prd-id}-evidence.md` with verification flags (PARTIAL, INDIRECT, ASSUMPTION) to signal any limitations.
+Executes the Planner's steps sequentially, verifying each step and committing changes incrementally. Documents discoveries in `progress.md` and creates evidence files showing what was completed. The Builder gracefully bails out at ~100K tokens to preserve context, documenting progress for resumption in the next iteration.
 
 ### The Reviewer Agent
 
 **Core mandate:** Never leave state unchanged—always modify something to improve the situation.
 
-**Goals:**
-- Verify pending PRDs meet all acceptance criteria (not just "build succeeded")
-- Assess verification flags and reject insufficient work
-- Update plans when the Builder bails out (mark completed steps, clarify remaining work)
-- Detect infinite loops (PRDs stuck in the same state for 2+ iterations)
-- Cross-pollinate learnings across PRDs to prevent repeated failures
-
-The Reviewer catches incomplete verifications, preserves progress from bailouts, and actively breaks stuck cycles by suggesting alternative approaches or reprioritizing work.
+Verifies pending PRDs meet all acceptance criteria (not just "build succeeded"), updates plans when the Builder bails out, and prevents stuck cycles by ensuring state and context is always changing. Cross-pollinates learnings from one PRD to all future PRDs via `progress.md`.
 
 ### Resilience & Iteration
 
-The system handles interruptions and improves over time through:
+The system handles interruptions and improves over time:
 
 - **Token-based bailout**: Agents stop before hitting limits, preserving context for resumption
 - **Plan lifecycle**: Plans are updated with actual progress, not discarded on failure
-- **Evidence flags**: Builders honestly flag verification limitations; Reviewers assess sufficiency
-- **Loop detection**: Reviewer identifies stuck cycles and forces state changes
+- **Loop prevention**: Reviewer prevents stuck cycles by ensuring state and context always changes
 - **Cross-pollination**: Discoveries from one PRD improve all future PRDs via `progress.md`
-- **State machine**: Enforces workflow (only one active PRD at a time, clear transitions)
 
-Each iteration refines understanding. Failed attempts add context for the next try. Progress accumulates across iterations, making the system progressively smarter about your codebase.
+Each iteration refines understanding. Failed attempts add context for the next try, making the system progressively smarter about your codebase.
 
 ## Prerequisites & Installation
 
