@@ -40,7 +40,7 @@ Milhouse builds on the Ralph Loop pattern for autonomous coding agents.
 ## Table of Contents
 
 - [Quick Overview](#quick-overview)
-- [How mil run Works](#how-mil-run-works)
+- [How Milhouse Works](#how-milhouse-works)
 - [Prerequisites & Installation](#prerequisites--installation)
 - [Quick Start](#quick-start)
 - [Basic Commands](#basic-commands)
@@ -61,9 +61,22 @@ Milhouse automates development through three phases:
 
 Each iteration cycles through all phases. Run `mil run 1` for one iteration, `mil run 5` for five, etc.
 
-## How `mil run` Works
+## How Milhouse Works
 
-Milhouse orchestrates three autonomous agents in a resilient feedback loop. Each iteration completes a full cycle, with work flowing through PRD states: **Open → Active → Pending → Complete**.
+### Creating PRDs with `mil chat`
+
+Before work begins, you use `mil chat` to define what needs to be built. This is an interactive session where Milhouse acts as your product manager:
+
+- **Asks clarifying questions** to understand your requirements
+- **Creates well-structured PRDs** with clear acceptance criteria
+- **Edits existing PRDs** based on your feedback or new information
+- **Updates system prompts** to teach Milhouse about your codebase patterns
+
+Think of `mil chat` as a conversation with an AI product manager who translates your ideas into actionable PRDs. You can create new requirements, refine existing ones, or provide context that will help the autonomous agents work more effectively.
+
+### Autonomous Execution with `mil run`
+
+Once PRDs are defined, `mil run` orchestrates three autonomous agents in a resilient feedback loop. Each iteration completes a full cycle, with work flowing through PRD states: **Open → Active → Pending → Complete**.
 
 ### The Planner Agent
 
