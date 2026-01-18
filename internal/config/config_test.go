@@ -185,15 +185,15 @@ func TestValidation(t *testing.T) {
 
 func TestSaveAndLoad(t *testing.T) {
 	// Create a temporary directory
-	tmpDir, err := os.MkdirTemp("", .milhouse-config-test-*")
+	tmpDir, err := os.MkdirTemp("", ".milhouse-config-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
 	// Create .milhouse directory
-.milhouseDir := filepath.Join(tmpDir, MillhouseDir)
-	if err := os.MkdirAll.milhouseDir, 0755); err != nil {
+	milhouseDir := filepath.Join(tmpDir, MillhouseDir)
+	if err := os.MkdirAll(milhouseDir, 0755); err != nil {
 		t.Fatalf("Failed to create .milhouse directory: %v", err)
 	}
 
@@ -427,13 +427,13 @@ func TestLoadInvalidYAML(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Create .milhouse directory
-.milhouseDir := filepath.Join(tmpDir, MillhouseDir)
-	if err := os.MkdirAll.milhouseDir, 0755); err != nil {
+	milhouseDir := filepath.Join(tmpDir, MillhouseDir)
+	if err := os.MkdirAll(milhouseDir, 0755); err != nil {
 		t.Fatalf("Failed to create .milhouse directory: %v", err)
 	}
 
 	// Write invalid YAML
-	configPath := filepath.Join.milhouseDir, ConfigFile)
+	configPath := filepath.Join(milhouseDir, ConfigFile)
 	if err := os.WriteFile(configPath, []byte("invalid: yaml: content: ]["), 0644); err != nil {
 		t.Fatalf("Failed to write invalid YAML: %v", err)
 	}

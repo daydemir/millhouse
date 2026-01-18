@@ -1,8 +1,38 @@
 # Milhouse
 
-> Claude Code Ralph Loops with Glasses
+## claude code ralph loops, with glasses
 
-Milhouse is an autonomous multi-phase software development system powered by Claude AI. It automatically plans, builds, and reviews code through iterative cycles, enabling you to scale your development work without manual intervention.
+![milhouse](https://static.wikia.nocookie.net/springfieldbound/images/2/23/Milhouse_Van_Houten_%28Official_Image%29.png)
+
+> [!WARNING]
+> **Use at your own risk.** Milhouse runs with `--dangerously-skip-permissions` under the hood.
+>
+> **Recommended:**
+> - Use [Claude Code Safety Net](https://github.com/kenryu42/claude-code-safety-net) for protection
+> - Claude Code Max plan recommended (consumes significant tokens)
+> - Start with small iterations to understand behavior
+
+Milhouse is an autonomous Claude Code runner, built on Ralph Loops. You create Product Requirement Documents (PRDs) by calling `mil discuss`. Then you run `mil run` and Milhouse spawns agents to plan, build, and review work to complete your PRDs.
+
+## Inspiration
+
+Milhouse builds on the Ralph Loop pattern for autonomous coding agents.
+
+**Original Article:**
+- [Ralph: The AI Coding Agent - Jeff Huntley](https://huntleyjoseph.com/blog/ralph)
+
+**Related Projects:**
+- [glittercowboy/get-shit-done](https://github.com/glittercowboy/get-shit-done) - GSD framework
+- [michaelshimeles/ralphy](https://github.com/michaelshimeles/ralphy) - Ralph implementation
+- [snarktank/ralph](https://github.com/snarktank/ralph) - Ralph variant
+- [davis7dotsh/r8y-elixir-version](https://github.com/davis7dotsh/r8y-elixir-version) - Elixir Ralph
+
+**Videos:**
+- [We need to talk about Ralph by Theo - t3․gg](https://youtu.be/Yr9O6KFwbW4?si=xM6EOL8Pdvn83vAx)
+- [The Ralph Wiggum Loop from 1st principles by Geoffrey Huntley](https://youtu.be/4Nna09dG_c0?si=4zFYeH1qja1piOEh)
+- [An early preview of loom by Geoffrey Huntley](https://youtu.be/zX_Wq9wAyxI?si=Tirq4A-N3lJkxson)
+- [Stop Using The Ralph Loop Plugin by Chase AI](https://youtu.be/yAE3ONleUas?si=XTzFJN3We-TNVUUy)
+- [The New Claude Code Meta by Chase AI](https://youtu.be/SqmXS8q_2BM?si=tbcwW5WM4n34aTgq)
 
 ## Table of Contents
 
@@ -52,11 +82,15 @@ Milhouse is **not** ideal for:
 
 **Requirements:**
 - Claude Code CLI (`claude-code`)
-- Go 1.21+ (for building from source)
+- Homebrew (recommended) or Go 1.21+ (for building from source)
 
 **Installation:**
 
 ```bash
+# Recommended: Install via Homebrew
+brew install daydemir/tap/mil
+
+# Or build from source
 go install github.com/daydemir/milhouse/cmd/mil@latest
 ```
 
@@ -76,7 +110,7 @@ mil version
 
 2. **Define your requirement:**
    ```bash
-   mil discuss "Add user authentication with JWT tokens"
+   mil discuss
    ```
 
 3. **Run the first iteration:**
@@ -144,21 +178,18 @@ mil run 2
 **Cost optimization focused work:**
 ```bash
 mil config edit
-# Set model to claude-3-5-sonnet for faster iterations
+# Set model to sonnet for faster iterations
 mil run 5
 ```
 
 **Quality-focused development:**
 ```bash
 mil config edit
-# Set model to claude-opus-4-5 for higher quality
+# Set model to opus for higher quality
 mil run 1
 ```
 
 ## Token Usage & Costs
-
-> [!WARNING]
-> Running autonomous loops consumes Claude API quota and incurs costs. Start small to observe behavior before scaling.
 
 **Per-phase token estimates:**
 - **Planner:** 15-30K tokens
@@ -174,8 +205,8 @@ mil run 1
 | `mil run 10` | 550-1.3M | ~$4.00-$13.00 |
 
 **Optimize costs:**
-- Use `claude-3-5-sonnet` for faster, cheaper iterations
-- Use `claude-opus-4-5` for complex or critical work
+- Use `sonnet` for faster, cheaper iterations
+- Use `opus` for complex or critical work
 - Start with `mil run 1` to validate the workflow
 - Set `max_iterations` in config to limit per-phase work
 
@@ -189,7 +220,7 @@ See [CONFIGURATION.md](docs/CONFIGURATION.md) for all cost optimization options.
 | `.milhouse/` directory errors | Ensure current directory is writable; run `mil init` first |
 | API errors or rate limits | Check Claude Code CLI credentials: `claude-code` |
 | Large token usage | Reduce iterations: use `mil run 1` instead of `mil run 5` |
-| Unexpected output quality | Check configuration: `mil config show`; try `claude-opus-4-5` model |
+| Unexpected output quality | Check configuration: `mil config show`; try `opus` model |
 
 For complex issues, open a [GitHub issue](https://github.com/daydemir/milhouse/issues).
 
@@ -202,6 +233,4 @@ For complex issues, open a [GitHub issue](https://github.com/daydemir/milhouse/i
 
 ## License
 
-MIT License — See [LICENSE](LICENSE) file for full text.
-
-Milhouse is built on Claude AI and the Claude Code framework.
+[MIT License](LICENSE)

@@ -82,26 +82,15 @@ func DefaultConfig() *Config {
 	return cfg
 }
 
-// Load reads configuration from both user global and project-specific config files
-// Precedence: project-specific (.milhouse/config.yaml) overrides user global (~/.milhouse/config.yaml)
+// Load reads configuration from project-specific config file
+// Precedence: project config (.milhouse/config.yaml) overrides defaults
 func Load(basePath string) (*Config, error) {
 	cfg := DefaultConfig()
 
-	// Try loading user global config first
-	userGlobalPath, err := getUserConfigPath()
-	if err == nil {
-		if userCfg, err := loadFromFile(userGlobalPath); err == nil {
-			cfg = userCfg
-		} else {
-			// Log which file failed, but continue with defaults
-			log.Printf("Warning: failed to load user config from %s: %v", userGlobalPath, err)
-		}
-	}
-
-	// Load project-specific config (overrides user global)
+	// Load project-specific config (overrides defaults)
 	projectPath := filepath.Join(basePath, MillhouseDir, ConfigFile)
 	if projectCfg, err := loadFromFile(projectPath); err == nil {
-		// Merge project config over user config
+		// Merge project config over defaults
 		cfg = mergeConfigs(cfg, projectCfg)
 	}
 
@@ -316,15 +305,6 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
-}
-
-// getUserConfigPath returns the path to the user's global config file
-func getUserConfigPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, MillhouseDir, ConfigFile), nil
 }
 
 // ApplyOverrides applies CLI flag overrides to the configuration

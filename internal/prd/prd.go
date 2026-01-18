@@ -74,22 +74,24 @@ func (p PassesStatus) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PassesStatus) UnmarshalJSON(data []byte) error {
+	// Try unmarshaling as bool first
 	var b bool
 	if err := json.Unmarshal(data, &b); err == nil {
 		p.Value = b
 		return nil
 	}
 
+	// Try unmarshaling as string - accept ANY string value
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		if s == "active" || s == "pending" {
-			p.Value = s
-			return nil
-		}
-		return fmt.Errorf("invalid passes string value: %s", s)
+		// Accept any string value without validation
+		// The reviewer agent will handle invalid values
+		p.Value = s
+		return nil
 	}
 
-	return fmt.Errorf("passes must be bool or 'active'/'pending'")
+	// Only reject if it's neither bool nor string
+	return fmt.Errorf("passes must be bool or string, got: %s", string(data))
 }
 
 // PRD represents a single Product Requirements Document

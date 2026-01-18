@@ -20,8 +20,7 @@ var configCmd = &cobra.Command{
 Configuration is loaded from:
 1. CLI flags (highest priority)
 2. .milhouse/config.yaml (project-specific)
-3. ~/.milhouse/config.yaml (user global)
-4. Built-in defaults (lowest priority)`,
+3. Built-in defaults (lowest priority)`,
 }
 
 var configEditCmd = &cobra.Command{

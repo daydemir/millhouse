@@ -102,9 +102,7 @@ func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config)
 	result.Signals = handler.GetSignals()
 
 	fmt.Println() // Ensure newline after output
-	if result.TotalTokens > 0 {
-		display.TokenUsage(0, 0, result.TotalTokens)
-	}
+	handler.DisplayFinalTokenUsage()
 
 	return result, nil
 }

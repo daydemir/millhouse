@@ -21,7 +21,9 @@ var discussCmd = &cobra.Command{
   - Update existing PRDs (description, criteria, priority)
   - Remove PRDs from prd.json
   - Explore codebase and update prompt.md
-  - Answer questions about project state`,
+  - Answer questions about project state
+
+This command launches an interactive session - no arguments needed.`,
 	RunE: runDiscuss,
 }
 
@@ -30,6 +32,13 @@ func init() {
 }
 
 func runDiscuss(cmd *cobra.Command, args []string) error {
+	// Reject any arguments since discuss is interactive-only
+	if len(args) > 0 {
+		display.Warning("The 'discuss' command is interactive and does not accept arguments")
+		display.Info("Simply run 'mil discuss' to start an interactive session")
+		return fmt.Errorf("unexpected arguments")
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)

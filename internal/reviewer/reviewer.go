@@ -117,9 +117,7 @@ func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config)
 	llm.ParseStream(reader, handler, cancelExec)
 
 	fmt.Println() // Ensure newline after output
-	if handler.GetTokenStats().TotalTokens > 0 {
-		display.TokenUsage(0, 0, handler.GetTokenStats().TotalTokens)
-	}
+	handler.DisplayFinalTokenUsage()
 
 	return handler, nil
 }

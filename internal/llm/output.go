@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/suelio/millhouse/internal/display"
 )
@@ -98,39 +99,47 @@ type ConsoleHandler struct {
 	display        *display.Display
 	toolCount      int
 	textBuffer     strings.Builder
+
+	// Throttling fields
+	lastTokenDisplay time.Time
+	throttleInterval time.Duration
 }
 
 // NewConsoleHandler creates a basic console handler
 func NewConsoleHandler() *ConsoleHandler {
 	return &ConsoleHandler{
-		tokenThreshold: 100000, // 100K for Millhouse
-		display:        display.New(),
+		tokenThreshold:   100000, // 100K for Millhouse
+		display:          display.New(),
+		throttleInterval: 500 * time.Millisecond,
 	}
 }
 
 // NewConsoleHandlerWithThreshold creates a handler with custom token threshold
 func NewConsoleHandlerWithThreshold(threshold int) *ConsoleHandler {
 	return &ConsoleHandler{
-		tokenThreshold: threshold,
-		display:        display.New(),
+		tokenThreshold:   threshold,
+		display:          display.New(),
+		throttleInterval: 500 * time.Millisecond,
 	}
 }
 
 // NewConsoleHandlerWithTerminate creates a handler with token limit termination support
 func NewConsoleHandlerWithTerminate(threshold int, onTerminate func()) *ConsoleHandler {
 	return &ConsoleHandler{
-		tokenThreshold: threshold,
-		onTerminate:    onTerminate,
-		display:        display.New(),
+		tokenThreshold:   threshold,
+		onTerminate:      onTerminate,
+		display:          display.New(),
+		throttleInterval: 500 * time.Millisecond,
 	}
 }
 
 // NewConsoleHandlerWithDisplay creates a handler with a custom display instance
 func NewConsoleHandlerWithDisplay(d *display.Display, threshold int, onTerminate func()) *ConsoleHandler {
 	return &ConsoleHandler{
-		tokenThreshold: threshold,
-		onTerminate:    onTerminate,
-		display:        d,
+		tokenThreshold:   threshold,
+		onTerminate:      onTerminate,
+		display:          d,
+		throttleInterval: 500 * time.Millisecond,
 	}
 }
 
@@ -197,21 +206,22 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 }
 
 func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
-	// InputTokens: take max if provided (defensive)
+	// Update token stats
 	if usage.InputTokens > h.tokenStats.InputTokens {
 		h.tokenStats.InputTokens = usage.InputTokens
 	}
-	// OutputTokens: replace with cumulative value (message_delta provides cumulative counts)
 	if usage.OutputTokens > 0 {
 		h.tokenStats.OutputTokens = usage.OutputTokens
 	}
 	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
-	// Display token usage with styled output
-	h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
-
-	// Reset tool count after displaying
-	h.toolCount = 0
+	// CHANGED: Only display if enough time has passed since last display
+	now := time.Now()
+	if now.Sub(h.lastTokenDisplay) >= h.throttleInterval {
+		h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
+		h.toolCount = 0
+		h.lastTokenDisplay = now
+	}
 
 	// Check threshold and trigger termination if exceeded
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
@@ -245,6 +255,13 @@ func (h *ConsoleHandler) ShouldTerminate() bool {
 // GetToolCount returns the current tool use count
 func (h *ConsoleHandler) GetToolCount() int {
 	return h.toolCount
+}
+
+// DisplayFinalTokenUsage forces a final token display regardless of throttling
+func (h *ConsoleHandler) DisplayFinalTokenUsage() {
+	if h.tokenStats.TotalTokens > 0 {
+		h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
+	}
 }
 
 // SetDisplay sets the display instance for styled output
