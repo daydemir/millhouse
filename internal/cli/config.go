@@ -63,7 +63,7 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized")
 	}
 
-	display.Header("Millhouse Configuration Editor")
+	display.Header("Milhouse Configuration Editor")
 	display.Info("Opening interactive editor...")
 	display.Divider()
 

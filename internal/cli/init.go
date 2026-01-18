@@ -14,7 +14,7 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a new Millhouse project",
+	Short: "Initialize a new Milhouse project",
 	Long: `Create a .milhouse/ directory with starter files:
   - prd.json     PRD list with statuses
   - progress.md  Append-only observations
@@ -41,7 +41,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("already initialized")
 	}
 
-	display.Header("Initializing Millhouse")
+	display.Header("Initializing Milhouse")
 
 	// Create .milhouse directory
 	if err := os.MkdirAll(milhousePath, 0755); err != nil {
@@ -67,7 +67,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	display.Success("Created .milhouse/prd.json")
 
 	// Create progress.md with header
-	progressContent := fmt.Sprintf(`# Millhouse Progress Log
+	progressContent := fmt.Sprintf(`# Milhouse Progress Log
 
 Initialized: %s
 
@@ -86,7 +86,7 @@ Initialized: %s
 	promptContent := `# Codebase Context
 
 This file provides context about the codebase for the autonomous agents.
-Run 'mil discuss' to have Claude help map your codebase.
+Run 'mil chat' to have Claude help map your codebase.
 
 ## Project Overview
 <!-- Describe what this project does -->
@@ -111,7 +111,7 @@ Run 'mil discuss' to have Claude help map your codebase.
 	}
 	display.Success("Created .milhouse/prompt.md")
 
-	display.Info("Run 'mil discuss' to add PRDs and map your codebase")
+	display.Info("Run 'mil chat' to add PRDs and map your codebase")
 	display.Info("Run 'mil status' to see PRD status")
 
 	return nil

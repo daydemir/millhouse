@@ -47,6 +47,7 @@ type Config struct {
 		Planner  PhaseConfig `yaml:"planner,omitempty"`
 		Builder  PhaseConfig `yaml:"builder,omitempty"`
 		Reviewer PhaseConfig `yaml:"reviewer,omitempty"`
+		Chat     PhaseConfig `yaml:"chat,omitempty"`
 	} `yaml:"phases,omitempty"`
 	Global       GlobalConfig `yaml:"global,omitempty"`
 	ContextFiles []string     `yaml:"contextFiles,omitempty"`
@@ -71,6 +72,10 @@ func DefaultConfig() *Config {
 		Model:         ModelSonnet,
 		MaxTokens:     80000,
 		ProgressLines: 200,
+	}
+	cfg.Phases.Chat = PhaseConfig{
+		Model: ModelSonnet,
+		// No MaxTokens - chat runs in interactive mode without token limits
 	}
 
 	// Set global defaults
@@ -148,6 +153,7 @@ func mergeConfigs(base, override *Config) *Config {
 	result.Phases.Planner = base.Phases.Planner
 	result.Phases.Builder = base.Phases.Builder
 	result.Phases.Reviewer = base.Phases.Reviewer
+	result.Phases.Chat = base.Phases.Chat
 
 	// Merge global config
 	if override.Global.Model != "" {
@@ -187,6 +193,11 @@ func mergeConfigs(base, override *Config) *Config {
 	if override.Phases.Reviewer.ProgressLines != 0 {
 		result.Phases.Reviewer.ProgressLines = override.Phases.Reviewer.ProgressLines
 	}
+
+	if override.Phases.Chat.Model != "" {
+		result.Phases.Chat.Model = override.Phases.Chat.Model
+	}
+	// No MaxTokens or ProgressLines for chat (interactive mode)
 
 	// Merge context files with deduplication
 	allFiles := append(base.ContextFiles, override.ContextFiles...)
@@ -236,6 +247,8 @@ func (c *Config) GetPhaseConfig(phase string) PhaseConfig {
 		phaseConfig = c.Phases.Builder
 	case "reviewer":
 		phaseConfig = c.Phases.Reviewer
+	case "chat":
+		phaseConfig = c.Phases.Chat
 	default:
 		log.Printf("Warning: unknown phase '%s', using planner config as fallback", phase)
 		phaseConfig = c.Phases.Planner // default fallback
@@ -260,6 +273,8 @@ func (c *Config) GetPhaseConfig(phase string) PhaseConfig {
 			phaseConfig.ProgressLines = 20
 		case "reviewer":
 			phaseConfig.ProgressLines = 200
+		case "chat":
+			phaseConfig.ProgressLines = 0 // Chat doesn't use progress lines
 		}
 	}
 
@@ -290,6 +305,7 @@ func (c *Config) Validate() error {
 		{"planner", c.Phases.Planner},
 		{"builder", c.Phases.Builder},
 		{"reviewer", c.Phases.Reviewer},
+		{"chat", c.Phases.Chat},
 	}
 
 	for _, p := range phases {
@@ -308,7 +324,7 @@ func (c *Config) Validate() error {
 }
 
 // ApplyOverrides applies CLI flag overrides to the configuration
-func (c *Config) ApplyOverrides(plannerModel, builderModel, reviewerModel string,
+func (c *Config) ApplyOverrides(plannerModel, builderModel, reviewerModel, chatModel string,
 	plannerTokens, builderTokens, reviewerTokens int) {
 	if plannerModel != "" {
 		c.Phases.Planner.Model = plannerModel
@@ -318,6 +334,9 @@ func (c *Config) ApplyOverrides(plannerModel, builderModel, reviewerModel string
 	}
 	if reviewerModel != "" {
 		c.Phases.Reviewer.Model = reviewerModel
+	}
+	if chatModel != "" {
+		c.Phases.Chat.Model = chatModel
 	}
 
 	if plannerTokens > 0 {
@@ -329,4 +348,5 @@ func (c *Config) ApplyOverrides(plannerModel, builderModel, reviewerModel string
 	if reviewerTokens > 0 {
 		c.Phases.Reviewer.MaxTokens = reviewerTokens
 	}
+	// No chatTokens parameter - chat doesn't use token limits
 }

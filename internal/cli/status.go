@@ -53,13 +53,13 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	if len(prdFile.PRDs) == 0 {
 		display.Info("No PRDs defined yet")
-		display.Info("Run 'mil discuss' to add PRDs")
+		display.Info("Run 'mil chat' to add PRDs")
 		return nil
 	}
 
 	// Verbose mode shows full details
 	if verboseFlag {
-		display.Header("Millhouse Status")
+		display.Header("Milhouse Status")
 
 		// Show open PRDs
 		if len(open) > 0 {

@@ -44,11 +44,11 @@ func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *co
 	return runClaude(ctx, basePath, prompt, cfg)
 }
 
-// RunDiscuss runs an interactive Claude session
-func RunDiscuss(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) error {
-	prompt := buildDiscussPrompt(basePath, prdFile)
+// RunChat runs an interactive Claude session
+func RunChat(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) error {
+	prompt := buildChatPrompt(basePath, prdFile)
 
-	// For discuss, we run interactively (not stream-json)
+	// For chat, we run interactively (not stream-json)
 	return runClaudeInteractive(ctx, basePath, prompt, cfg)
 }
 
@@ -108,10 +108,13 @@ func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config)
 }
 
 func runClaudeInteractive(ctx context.Context, basePath, prompt string, cfg *config.Config) error {
+	phaseConfig := cfg.GetPhaseConfig("chat")
+
 	claude := llm.NewClaude("")
 
 	opts := llm.ExecuteOptions{
 		SystemPrompt: prompt,
+		Model:        phaseConfig.Model,
 		ContextFiles: []string{
 			prd.GetMillhousePath(basePath, prd.PRDFile),
 			prd.GetMillhousePath(basePath, prd.ProgressFile),
@@ -140,7 +143,7 @@ func buildBuilderPrompt(basePath string, activePRD *prd.PRD, cfg *config.Config)
 	})
 }
 
-func buildDiscussPrompt(basePath string, prdFile *prd.PRDFileData) string {
+func buildChatPrompt(basePath string, prdFile *prd.PRDFileData) string {
 	open := prdFile.GetOpenPRDs()
 	pending := prdFile.GetPendingPRDs()
 	complete := prdFile.GetCompletePRDs()
@@ -151,7 +154,7 @@ func buildDiscussPrompt(basePath string, prdFile *prd.PRDFileData) string {
 	progressContent := readFileContent(prd.GetMillhousePath(basePath, prd.ProgressFile))
 	progressLines := len(strings.Split(progressContent, "\n"))
 
-	return prompts.BuildDiscussPrompt(prompts.DiscussData{
+	return prompts.BuildChatPrompt(prompts.ChatData{
 		TotalPRDs:        len(prdFile.PRDs),
 		OpenPRDs:         len(open),
 		PendingPRDs:      len(pending),

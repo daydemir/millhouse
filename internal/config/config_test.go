@@ -270,7 +270,7 @@ func TestApplyOverrides(t *testing.T) {
 	cfg := DefaultConfig()
 
 	// Apply overrides
-	cfg.ApplyOverrides(ModelHaiku, ModelOpus, "", 50000, 150000, 0)
+	cfg.ApplyOverrides(ModelHaiku, ModelOpus, "", "", 50000, 150000, 0)
 
 	// Check overrides were applied
 	if cfg.Phases.Planner.Model != ModelHaiku {
@@ -491,7 +491,7 @@ func TestCLIFlagOverridesValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := DefaultConfig()
-			cfg.ApplyOverrides(tt.planner, tt.builder, tt.reviewer,
+			cfg.ApplyOverrides(tt.planner, tt.builder, tt.reviewer, "",
 				tt.plannerTokens, tt.builderTokens, tt.reviewerTokens)
 
 			err := cfg.Validate()

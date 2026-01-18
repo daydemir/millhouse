@@ -13,8 +13,10 @@ import (
 	"github.com/daydemir/milhouse/internal/prd"
 )
 
-var discussCmd = &cobra.Command{
-	Use:   "discuss",
+var chatModelFlag string
+
+var chatCmd = &cobra.Command{
+	Use:   "chat",
 	Short: "Interactive Claude session for PRD management",
 	Long: `Start an interactive Claude session to:
   - Add new PRDs to prd.json
@@ -24,18 +26,19 @@ var discussCmd = &cobra.Command{
   - Answer questions about project state
 
 This command launches an interactive session - no arguments needed.`,
-	RunE: runDiscuss,
+	RunE: runChat,
 }
 
 func init() {
-	rootCmd.AddCommand(discussCmd)
+	chatCmd.Flags().StringVar(&chatModelFlag, "model", "", "Override chat model (haiku, sonnet, opus)")
+	rootCmd.AddCommand(chatCmd)
 }
 
-func runDiscuss(cmd *cobra.Command, args []string) error {
-	// Reject any arguments since discuss is interactive-only
+func runChat(cmd *cobra.Command, args []string) error {
+	// Reject any arguments since chat is interactive-only
 	if len(args) > 0 {
-		display.Warning("The 'discuss' command is interactive and does not accept arguments")
-		display.Info("Simply run 'mil discuss' to start an interactive session")
+		display.Warning("The 'chat' command is interactive and does not accept arguments")
+		display.Info("Simply run 'mil chat' to start an interactive session")
 		return fmt.Errorf("unexpected arguments")
 	}
 
@@ -62,16 +65,27 @@ func runDiscuss(cmd *cobra.Command, args []string) error {
 		cfg = config.DefaultConfig()
 	}
 
+	// Apply CLI flag override
+	if chatModelFlag != "" {
+		cfg.Phases.Chat.Model = chatModelFlag
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		display.Error(fmt.Sprintf("Invalid configuration: %v", err))
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Create context for the session
 	ctx := context.Background()
 
-	display.Header("Millhouse Discuss")
+	display.Header("Milhouse Chat")
 	display.Info("Starting interactive session...")
 	display.Divider()
 
 	// Run interactive Claude session
-	if err := builder.RunDiscuss(ctx, cwd, prdFile, cfg); err != nil {
-		return fmt.Errorf("discuss session error: %w", err)
+	if err := builder.RunChat(ctx, cwd, prdFile, cfg); err != nil {
+		return fmt.Errorf("chat session error: %w", err)
 	}
 
 	return nil

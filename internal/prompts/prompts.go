@@ -13,14 +13,14 @@ var (
 	plannerTmpl  *template.Template
 	builderTmpl  *template.Template
 	reviewerTmpl *template.Template
-	discussTmpl  *template.Template
+	chatTmpl     *template.Template
 )
 
 func init() {
 	plannerTmpl = template.Must(template.ParseFS(templates, "planner.tmpl"))
 	builderTmpl = template.Must(template.ParseFS(templates, "builder.tmpl"))
 	reviewerTmpl = template.Must(template.ParseFS(templates, "reviewer.tmpl"))
-	discussTmpl = template.Must(template.ParseFS(templates, "discuss.tmpl"))
+	chatTmpl = template.Must(template.ParseFS(templates, "chat.tmpl"))
 }
 
 // PlannerData contains data for the planner prompt template
@@ -75,8 +75,8 @@ func BuildReviewerPrompt(data ReviewerData) string {
 	return buf.String()
 }
 
-// DiscussData contains data for the discuss prompt template
-type DiscussData struct {
+// ChatData contains data for the chat prompt template
+type ChatData struct {
 	TotalPRDs        int
 	OpenPRDs         int
 	PendingPRDs      int
@@ -85,10 +85,10 @@ type DiscussData struct {
 	HasPromptContent bool
 }
 
-// BuildDiscussPrompt renders the discuss prompt template
-func BuildDiscussPrompt(data DiscussData) string {
+// BuildChatPrompt renders the chat prompt template
+func BuildChatPrompt(data ChatData) string {
 	var buf bytes.Buffer
-	if err := discussTmpl.Execute(&buf, data); err != nil {
+	if err := chatTmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()

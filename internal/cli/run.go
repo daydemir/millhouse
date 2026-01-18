@@ -85,7 +85,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 	}
 
 	// Apply CLI flag overrides
-	cfg.ApplyOverrides(plannerModelFlag, builderModelFlag, reviewerModelFlag,
+	cfg.ApplyOverrides(plannerModelFlag, builderModelFlag, reviewerModelFlag, "",
 		plannerTokensFlag, builderTokensFlag, reviewerTokensFlag)
 
 	// Validate configuration after applying overrides
@@ -97,7 +97,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 	// Create context for the run
 	ctx := context.Background()
 
-	d.Header(fmt.Sprintf("Millhouse Run (%d iterations)", iterations))
+	d.Header(fmt.Sprintf("Milhouse Run (%d iterations)", iterations))
 
 	for i := 1; i <= iterations; i++ {
 		d.IterationHeader(i, iterations)

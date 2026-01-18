@@ -165,7 +165,7 @@ func (d *Display) Analysis(text string) {
 // Header prints a styled header (backwards compatible)
 func (d *Display) Header(text string) {
 	fmt.Println()
-	d.MillhouseBox("MILLHOUSE", text)
+	d.MillhouseBox("MILHOUSE", text)
 }
 
 // SubHeader prints a styled sub-header

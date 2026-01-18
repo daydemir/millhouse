@@ -56,6 +56,9 @@ func NewEditor(basePath string, cfg *Config) *Editor {
 		{"reviewerModel", cfg.Phases.Reviewer.Model, "sonnet", 10},
 		{"reviewerMaxTokens", fmt.Sprintf("%d", cfg.Phases.Reviewer.MaxTokens), "80000", 10},
 		{"reviewerProgressLines", fmt.Sprintf("%d", cfg.Phases.Reviewer.ProgressLines), "200", 10},
+
+		// Chat settings (interactive mode - no token limits)
+		{"chatModel", cfg.Phases.Chat.Model, "sonnet", 10},
 	}
 
 	for _, f := range fields {
@@ -76,6 +79,7 @@ func NewEditor(basePath string, cfg *Config) *Editor {
 			"plannerModel", "plannerMaxTokens", "plannerProgressLines",
 			"builderModel", "builderMaxTokens", "builderProgressLines",
 			"reviewerModel", "reviewerMaxTokens", "reviewerProgressLines",
+			"chatModel",
 		},
 		currentField: 0,
 	}
@@ -205,7 +209,7 @@ func (e *Editor) View() string {
 		MarginBottom(1)
 
 	// Header
-	s += headerStyle.Render("⚙️  Millhouse Configuration Editor") + "\n"
+	s += headerStyle.Render("⚙️  Milhouse Configuration Editor") + "\n"
 	s += "Use ↑/↓ to navigate • Tab/Enter to move to next • Ctrl+S to save • ESC to cancel\n\n"
 
 	// Global Settings
@@ -230,6 +234,10 @@ func (e *Editor) View() string {
 	s += e.renderField("reviewerModel", "Model", e.currentField == 8) + "\n"
 	s += e.renderField("reviewerMaxTokens", "Max Tokens", e.currentField == 9) + "\n"
 	s += e.renderField("reviewerProgressLines", "Progress Lines", e.currentField == 10) + "\n"
+
+	// Chat Settings (interactive mode - no token limits)
+	s += sectionStyle.Render("Chat Phase") + "\n"
+	s += e.renderField("chatModel", "Model", e.currentField == 11) + "\n"
 
 	// Status message
 	s += "\n"
@@ -410,6 +418,15 @@ func (e *Editor) saveConfig() error {
 		} else {
 			return fmt.Errorf("invalid reviewer progressLines '%s': must be a number", reviewerLinesStr)
 		}
+	}
+
+	// Chat settings (only model, no tokens for interactive mode)
+	chatModel := strings.TrimSpace(e.inputs["chatModel"].Value())
+	if chatModel != "" {
+		if !validModels[chatModel] {
+			return fmt.Errorf("invalid chat model '%s': must be 'haiku', 'sonnet', or 'opus'", chatModel)
+		}
+		newConfig.Phases.Chat.Model = chatModel
 	}
 
 	// Validate the new config

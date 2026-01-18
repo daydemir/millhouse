@@ -38,6 +38,9 @@ phases:
     maxTokens: 80000       # Token limit for reviewer
     progressLines: 200     # Lines of progress.md to include (reviewers need more history)
 
+  chat:
+    model: "sonnet"        # Model for interactive chat sessions
+
 # Optional: Additional context files to pass to agents
 contextFiles:
   - "docs/ARCHITECTURE.md"
@@ -211,6 +214,24 @@ phases:
   reviewer:
     model: "sonnet"       # Balanced verification
     maxTokens: 100000
+```
+
+### Chat Configuration
+
+The chat phase is used for interactive sessions (`mil chat`). Unlike other phases, chat runs in interactive mode without token limits or progress line tracking.
+
+```yaml
+phases:
+  chat:
+    model: "opus"  # Use opus for high-quality interactive sessions
+```
+
+**Note:** Chat phase only supports `model` configuration. It does not use `maxTokens` or `progressLines` because it runs in interactive mode.
+
+You can also override the chat model via CLI flag:
+
+```bash
+mil chat --model opus
 ```
 
 ## File Locations
