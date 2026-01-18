@@ -2,7 +2,9 @@
 
 > autonomous claude code ralph loops, but with glasses
 
-<img src="assets/milhouse.webp" alt="milhouse" height="300">
+<p align="center">
+  <img src="assets/milhouse.webp" alt="milhouse" height="300">
+</p>
 
 > [!CAUTION]
 > **Use at your own risk.** Milhouse runs with `--dangerously-skip-permissions` under the hood.
