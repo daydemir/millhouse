@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/suelio/millhouse/internal/config"
-	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/config"
+	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/prd"
 )
 
 var configCmd = &cobra.Command{

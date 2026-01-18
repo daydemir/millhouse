@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/suelio/millhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/prd"
 )
 
 const (

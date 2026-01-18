@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/suelio/millhouse/internal/builder"
-	"github.com/suelio/millhouse/internal/config"
-	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/builder"
+	"github.com/daydemir/milhouse/internal/config"
+	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/prd"
 )
 
 var discussCmd = &cobra.Command{

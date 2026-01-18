@@ -1,11 +1,11 @@
 .PHONY: build install clean test
 
-VERSION ?= 0.3.1
+VERSION ?= 0.4.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS := -X github.com/suelio/millhouse/internal/cli.Version=$(VERSION) \
-           -X github.com/suelio/millhouse/internal/cli.GitCommit=$(GIT_COMMIT) \
-           -X github.com/suelio/millhouse/internal/cli.BuildDate=$(BUILD_DATE)
+LDFLAGS := -X github.com/daydemir/milhouse/internal/cli.Version=$(VERSION) \
+           -X github.com/daydemir/milhouse/internal/cli.GitCommit=$(GIT_COMMIT) \
+           -X github.com/daydemir/milhouse/internal/cli.BuildDate=$(BUILD_DATE)
 
 # Build the mill binary
 build:

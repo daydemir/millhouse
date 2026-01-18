@@ -20,9 +20,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/suelio/millhouse/internal/cli.Version={{.Version}}
-      - -X github.com/suelio/millhouse/internal/cli.GitCommit={{.Commit}}
-      - -X github.com/suelio/millhouse/internal/cli.BuildDate={{.Date}}
+      - -X github.com/daydemir/milhouse/internal/cli.Version={{.Version}}
+      - -X github.com/daydemir/milhouse/internal/cli.GitCommit={{.Commit}}
+      - -X github.com/daydemir/milhouse/internal/cli.BuildDate={{.Date}}
 
 archives:
   - format: tar.gz
@@ -44,13 +44,13 @@ changelog:
       - '^chore:'
 
 brews:
-  - name: millhouse
+  - name: milhouse
     repository:
       owner: daydemir
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: https://github.com/suelio/millhouse
+    homepage: https://github.com/daydemir/milhouse
     description: Autonomous PRD-driven development CLI powered by Claude
     license: MIT
     install: |

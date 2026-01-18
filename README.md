@@ -25,7 +25,8 @@ Milhouse builds on the Ralph Loop pattern for autonomous coding agents.
 - [glittercowboy/get-shit-done](https://github.com/glittercowboy/get-shit-done) - GSD framework
 - [michaelshimeles/ralphy](https://github.com/michaelshimeles/ralphy) - Ralph implementation
 - [snarktank/ralph](https://github.com/snarktank/ralph) - Ralph variant
-- [davis7dotsh/r8y-elixir-version](https://github.com/davis7dotsh/r8y-elixir-version) - Elixir Ralph
+- [davis7dotsh/r8y-elixir-version](https://github.com/davis7dotsh/r8y-elixir-version) - see RALPH_LAND folder
+- [AndyMik90/Auto-Claude](https://github.com/AndyMik90/Auto-Claude) - Auto-Claude
 
 **Videos:**
 - [We need to talk about Ralph by Theo - t3․gg](https://youtu.be/Yr9O6KFwbW4?si=xM6EOL8Pdvn83vAx)

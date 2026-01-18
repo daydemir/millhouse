@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/prd"
 )
 
 var verboseFlag bool

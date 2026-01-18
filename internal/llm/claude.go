@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/suelio/millhouse/internal/utils"
+	"github.com/daydemir/milhouse/internal/utils"
 )
 
 // ExecuteOptions contains options for Claude execution

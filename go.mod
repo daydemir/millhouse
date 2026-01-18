@@ -1,4 +1,4 @@
-module github.com/suelio/millhouse
+module github.com/daydemir/milhouse
 
 go 1.24.0
 

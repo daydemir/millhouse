@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/suelio/millhouse/internal/builder"
-	"github.com/suelio/millhouse/internal/config"
-	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/planner"
-	"github.com/suelio/millhouse/internal/prd"
-	"github.com/suelio/millhouse/internal/reviewer"
+	"github.com/daydemir/milhouse/internal/builder"
+	"github.com/daydemir/milhouse/internal/config"
+	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/planner"
+	"github.com/daydemir/milhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/reviewer"
 )
 
 var (

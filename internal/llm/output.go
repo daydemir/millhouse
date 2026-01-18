@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/suelio/millhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/display"
 )
 
 // Signal types (Millhouse-specific)

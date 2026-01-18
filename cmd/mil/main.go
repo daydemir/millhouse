@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/suelio/millhouse/internal/cli"
+	"github.com/daydemir/milhouse/internal/cli"
 )
 
 func main() {

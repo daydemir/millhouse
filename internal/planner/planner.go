@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/suelio/millhouse/internal/config"
-	"github.com/suelio/millhouse/internal/display"
-	"github.com/suelio/millhouse/internal/llm"
-	"github.com/suelio/millhouse/internal/prd"
-	"github.com/suelio/millhouse/internal/prompts"
+	"github.com/daydemir/milhouse/internal/config"
+	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/llm"
+	"github.com/daydemir/milhouse/internal/prd"
+	"github.com/daydemir/milhouse/internal/prompts"
 )
 
 // PlannerResult contains the result of a planner run
