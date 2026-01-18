@@ -14,7 +14,7 @@
 > - Claude Code Max plan recommended (consumes significant tokens)
 > - Start with small iterations to understand behavior
 
-Milhouse is an autonomous Claude Code runner built on the concept of Ralph Loops that attempts to improve as it iterates. You create Product Requirement Documents (PRDs) by calling `mil chat`, then run `mil run` and Milhouse spawns agents to plan, build, and review work to complete your PRDs.
+Milhouse is an autonomous Claude Code runner built on the concept of Ralph Loops that improves as it iterates. You create Product Requirement Documents (PRDs) by calling `mil chat` and discussing what PRDs you want to make. Then call `mil run` and Milhouse spawns agents to plan, build, and review work to complete your PRDs. As it reviews its work, Milhouse adds more context and guidance to improve the likelihood for successful completion in future iterations.
 
 ## Inspiration
 
