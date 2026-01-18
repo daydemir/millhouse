@@ -9,15 +9,15 @@ LDFLAGS := -X github.com/suelio/millhouse/internal/cli.Version=$(VERSION) \
 
 # Build the mill binary
 build:
-	go build -ldflags "$(LDFLAGS)" -o mill ./cmd/mill
+	go build -ldflags "$(LDFLAGS)" -o mil ./cmd/mil
 
 # Install to $GOPATH/bin
 install:
-	go install -ldflags "$(LDFLAGS)" ./cmd/mill
+	go install -ldflags "$(LDFLAGS)" ./cmd/mil
 
 # Clean build artifacts
 clean:
-	rm -f mill
+	rm -f mil
 
 # Run tests
 test:
@@ -33,10 +33,10 @@ lint:
 
 # Build for all platforms (manual)
 release-manual:
-	GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mill-darwin-amd64 ./cmd/mill
-	GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o mill-darwin-arm64 ./cmd/mill
-	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mill-linux-amd64 ./cmd/mill
-	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mill-windows-amd64.exe ./cmd/mill
+	GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mil-darwin-amd64 ./cmd/mil
+	GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o mil-darwin-arm64 ./cmd/mil
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mil-linux-amd64 ./cmd/mil
+	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o mil-windows-amd64.exe ./cmd/mil
 
 # Release with GoReleaser (dry-run for local testing)
 release:

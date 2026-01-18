@@ -58,7 +58,7 @@ To fix, add to your ~/.zshrc or ~/.bashrc:
 Then restart your terminal, or run:
   source ~/.zshrc
 
-Alternatively, set the full path in .millhouse/config.yaml:
+Alternatively, set the full path in .milhouse/config.yaml:
   claude:
     binary: /path/to/claude`)
 }

@@ -8,8 +8,8 @@ before:
     - go mod tidy
 
 builds:
-  - main: ./cmd/mill
-    binary: mill
+  - main: ./cmd/mil
+    binary: mil
     env:
       - CGO_ENABLED=0
     goos:
@@ -54,6 +54,6 @@ brews:
     description: Autonomous PRD-driven development CLI powered by Claude
     license: MIT
     install: |
-      bin.install "mill"
+      bin.install "mil"
     test: |
-      system "#{bin}/mill", "version"
+      system "#{bin}/mil", "version"

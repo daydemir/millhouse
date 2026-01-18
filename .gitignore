@@ -1,6 +1,6 @@
 # Binaries
-mill
-mill-*
+/mil
+mil-*
 *.exe
 
 # Test artifacts

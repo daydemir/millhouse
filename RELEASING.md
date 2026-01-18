@@ -1,8 +1,8 @@
-# Releasing Millhouse
+# Releasing Milhouse
 
 ## Overview
 
-Millhouse uses an automated release process powered by GitHub Actions and GoReleaser.
+Milhouse uses an automated release process powered by GitHub Actions and GoReleaser.
 
 ## Release Process
 
@@ -52,12 +52,12 @@ When a `v*` tag is pushed, GitHub Actions automatically:
 
 ```bash
 # Check GitHub Actions status
-# https://github.com/daydemir/millhouse/actions
+# https://github.com/daydemir/milhouse/actions
 
 # After workflow completes:
 brew update
-brew upgrade millhouse
-mill version
+brew upgrade milhouse
+mil version
 ```
 
 ## Version Numbering

@@ -72,8 +72,8 @@ func runRun(cmd *cobra.Command, args []string) error {
 	d := display.NewWithOptions(GetNoColor())
 
 	if !prd.MillhouseExists(cwd) {
-		d.Error(".millhouse/ directory not found")
-		d.Info("Run 'mill init' to initialize")
+		d.Error(".milhouse/ directory not found")
+		d.Info("Run 'mil init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
 

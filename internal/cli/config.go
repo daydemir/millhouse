@@ -14,13 +14,13 @@ import (
 
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "Manage millhouse configuration",
+	Short: "Manage.milhouse configuration",
 	Long: `Manage configuration for model selection, token limits, and other settings.
 
 Configuration is loaded from:
 1. CLI flags (highest priority)
-2. .millhouse/config.yaml (project-specific)
-3. ~/.millhouse/config.yaml (user global)
+2. .milhouse/config.yaml (project-specific)
+3. ~/.milhouse/config.yaml (user global)
 4. Built-in defaults (lowest priority)`,
 }
 
@@ -41,7 +41,7 @@ var configShowCmd = &cobra.Command{
 var configInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize configuration with defaults",
-	Long:  "Create a .millhouse/config.yaml file with default settings in the current project.",
+	Long:  "Create a .milhouse/config.yaml file with default settings in the current project.",
 	RunE:  runConfigInit,
 }
 
@@ -59,8 +59,8 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	if !prd.MillhouseExists(cwd) {
-		display.Error(".millhouse/ directory not found")
-		display.Info("Run 'mill init' to initialize")
+		display.Error(".milhouse/ directory not found")
+		display.Info("Run 'mil init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
 
@@ -82,8 +82,8 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	}
 
 	if !prd.MillhouseExists(cwd) {
-		display.Error(".millhouse/ directory not found")
-		display.Info("Run 'mill init' to initialize")
+		display.Error(".milhouse/ directory not found")
+		display.Info("Run 'mil init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
 
@@ -115,8 +115,8 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	}
 
 	if !prd.MillhouseExists(cwd) {
-		display.Error(".millhouse/ directory not found")
-		display.Info("Run 'mill init' to initialize")
+		display.Error(".milhouse/ directory not found")
+		display.Info("Run 'mil init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
 
@@ -134,8 +134,8 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	}
 
 	display.Success(fmt.Sprintf("Created configuration file: %s", configPath))
-	display.Info("You can now edit it with: mill config edit")
-	display.Info("Or view it with: mill config show")
+	display.Info("You can now edit it with: mil config edit")
+	display.Info("Or view it with: mil config show")
 
 	return nil
 }

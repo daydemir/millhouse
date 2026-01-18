@@ -7,10 +7,10 @@ and create a step-by-step plan that the Builder agent will execute.
 </context>
 
 <files>
-<prd_file>.millhouse/prd.json</prd_file>
-<progress_file>.millhouse/progress.md</progress_file>
-<codebase_context>.millhouse/prompt.md</codebase_context>
-<plans_dir>.millhouse/plans/</plans_dir>
+<prd_file>.milhouse/prd.json</prd_file>
+<progress_file>.milhouse/progress.md</progress_file>
+<codebase_context>.milhouse/prompt.md</codebase_context>
+<plans_dir>.milhouse/plans/</plans_dir>
 </files>
 
 <codebase_patterns>
@@ -50,7 +50,7 @@ and create a step-by-step plan that the Builder agent will execute.
    - Map acceptance criteria to implementation steps
 
 5. **Save and activate** - Complete the planning phase:
-   - Write plan to .millhouse/plans/{prd-id}-plan.md
+   - Write plan to .milhouse/plans/{prd-id}-plan.md
    - Update prd.json: set passes="active" and activePlan="{plan-path}"
    - Signal completion
 </task>
@@ -105,11 +105,11 @@ How to verify this step is complete (e.g., "Build succeeds", "Tests pass")
 
 <completion_rules>
 When plan is created successfully:
-1. Ensure .millhouse/plans/ directory exists (create if needed)
-2. Write plan to .millhouse/plans/{prd-id}-plan.md
+1. Ensure .milhouse/plans/ directory exists (create if needed)
+2. Write plan to .milhouse/plans/{prd-id}-plan.md
 3. Update prd.json:
    - Set passes="active" for the selected PRD
-   - Set activePlan=".millhouse/plans/{prd-id}-plan.md"
+   - Set activePlan=".milhouse/plans/{prd-id}-plan.md"
 4. Signal: ###PLAN_COMPLETE:{prd-id}###
 
 If NO open PRDs available (all are active/pending/complete):

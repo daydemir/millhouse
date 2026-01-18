@@ -13,11 +13,11 @@ Your roles:
 </context>
 
 <files>
-<prd_file>.millhouse/prd.json</prd_file>
-<progress_file>.millhouse/progress.md</progress_file>
-<prompt_file>.millhouse/prompt.md</prompt_file>
-<evidence_dir>.millhouse/evidence/</evidence_dir>
-<plans_dir>.millhouse/plans/</plans_dir>
+<prd_file>.milhouse/prd.json</prd_file>
+<progress_file>.milhouse/progress.md</progress_file>
+<prompt_file>.milhouse/prompt.md</prompt_file>
+<evidence_dir>.milhouse/evidence/</evidence_dir>
+<plans_dir>.milhouse/plans/</plans_dir>
 </files>
 
 <current_state>
@@ -35,7 +35,7 @@ Your roles:
 
 1. VERIFY PENDING PRDs (passes="pending")
 For each PRD where passes="pending":
-- Read .millhouse/evidence/{prd-id}-evidence.md
+- Read .milhouse/evidence/{prd-id}-evidence.md
 - Verify EACH acceptance criterion was actually met
 - Check git log for commits
 
@@ -53,7 +53,7 @@ Common insufficient patterns to catch:
 Actions:
 - ALL VERIFIED:
   1. Update prd.json: set passes=true, clear activePlan
-  2. DELETE the plan file: rm .millhouse/plans/{prd-id}-plan.md
+  2. DELETE the plan file: rm .milhouse/plans/{prd-id}-plan.md
   3. Commit: git commit -am "verified({prd-id}): PRD confirmed complete"
   4. Signal ###VERIFIED:{prd-id}###
 

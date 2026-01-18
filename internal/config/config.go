@@ -11,7 +11,7 @@ import (
 
 const (
 	// Configuration directories
-	MillhouseDir = ".millhouse"
+	MillhouseDir = ".milhouse"
 	ConfigFile   = "config.yaml"
 
 	// Model validation
@@ -83,7 +83,7 @@ func DefaultConfig() *Config {
 }
 
 // Load reads configuration from both user global and project-specific config files
-// Precedence: project-specific (.millhouse/config.yaml) overrides user global (~/.millhouse/config.yaml)
+// Precedence: project-specific (.milhouse/config.yaml) overrides user global (~/.milhouse/config.yaml)
 func Load(basePath string) (*Config, error) {
 	cfg := DefaultConfig()
 
@@ -206,7 +206,7 @@ func mergeConfigs(base, override *Config) *Config {
 	return result
 }
 
-// Save writes configuration to .millhouse/config.yaml in the project directory
+// Save writes configuration to .milhouse/config.yaml in the project directory
 func Save(basePath string, cfg *Config) error {
 	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)

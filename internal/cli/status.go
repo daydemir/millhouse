@@ -32,8 +32,8 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	if !prd.MillhouseExists(cwd) {
-		display.Error(".millhouse/ directory not found")
-		display.Info("Run 'mill init' to initialize")
+		display.Error(".milhouse/ directory not found")
+		display.Info("Run 'mil init' to initialize")
 		return fmt.Errorf("not initialized")
 	}
 
@@ -53,7 +53,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	if len(prdFile.PRDs) == 0 {
 		display.Info("No PRDs defined yet")
-		display.Info("Run 'mill discuss' to add PRDs")
+		display.Info("Run 'mil discuss' to add PRDs")
 		return nil
 	}
 
@@ -120,7 +120,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	// Next action hint
 	if len(open) > 0 || len(pending) > 0 {
-		display.Info("Run 'mill run N' to execute N iterations")
+		display.Info("Run 'mil run N' to execute N iterations")
 	} else if len(complete) > 0 && len(open) == 0 && len(pending) == 0 {
 		display.Success("All PRDs complete!")
 	}

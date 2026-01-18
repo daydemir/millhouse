@@ -1,19 +1,19 @@
 # Configuration Guide
 
-Millhouse supports extensive configuration options for model selection, token limits, and context settings per phase. This guide covers how to configure Millhouse for your specific needs.
+Milhouse supports extensive configuration options for model selection, token limits, and context settings per phase. This guide covers how to configure Milhouse for your specific needs.
 
 ## Overview
 
-Configuration in Millhouse follows a precedence order from highest to lowest priority:
+Configuration in Milhouse follows a precedence order from highest to lowest priority:
 
 1. **CLI flags** - Command-line overrides (highest priority)
-2. **Project config** - `.millhouse/config.yaml` (project-specific settings)
-3. **User global config** - `~/.millhouse/config.yaml` (personal defaults)
-4. **Built-in defaults** - Hardcoded defaults in Millhouse (lowest priority)
+2. **Project config** - `.milhouse/config.yaml` (project-specific settings)
+3. **User global config** - `~/.milhouse/config.yaml` (personal defaults)
+4. **Built-in defaults** - Hardcoded defaults in Milhouse (lowest priority)
 
 ## Configuration File Format
 
-Configuration files use YAML format. Create a `.millhouse/config.yaml` file in your project:
+Configuration files use YAML format. Create a `.milhouse/config.yaml` file in your project:
 
 ```yaml
 # Global defaults (applied to all phases unless overridden)
@@ -88,7 +88,7 @@ Optional additional documentation files to pass to agents. Paths are relative to
 Open the interactive configuration editor with:
 
 ```bash
-mill config edit
+mil config edit
 ```
 
 Navigate with arrow keys (↑/↓), edit values directly, and save with Ctrl+S or cancel with ESC.
@@ -98,17 +98,17 @@ Navigate with arrow keys (↑/↓), edit values directly, and save with Ctrl+S o
 Display the effective configuration (merged from all sources):
 
 ```bash
-mill config show
+mil config show
 ```
 
 This helps you see which configuration is actually being used.
 
 ### Initialize Configuration
 
-Create a `.millhouse/config.yaml` with defaults:
+Create a `.milhouse/config.yaml` with defaults:
 
 ```bash
-mill config init
+mil config init
 ```
 
 ## CLI Flag Overrides
@@ -117,13 +117,13 @@ Override configuration values for a single run using CLI flags:
 
 ```bash
 # Override model selection
-mill run 1 --planner-model haiku --builder-model sonnet --reviewer-model haiku
+mil run 1 --planner-model haiku --builder-model sonnet --reviewer-model haiku
 
 # Override token limits
-mill run 1 --planner-max-tokens 50000 --builder-max-tokens 150000
+mil run 1 --planner-max-tokens 50000 --builder-max-tokens 150000
 
 # Combine overrides
-mill run 2 --planner-model haiku --planner-max-tokens 60000
+mil run 2 --planner-model haiku --planner-max-tokens 60000
 ```
 
 CLI flags take highest priority, so they override both project and global config files.
@@ -135,7 +135,7 @@ CLI flags take highest priority, so they override both project and global config
 For large projects where cost is primary concern, use cheaper models for planning and reviewing:
 
 ```yaml
-# .millhouse/config.yaml
+# .milhouse/config.yaml
 phases:
   planner:
     model: "haiku"
@@ -217,7 +217,7 @@ phases:
 
 ### Project Config
 
-**Location:** `.millhouse/config.yaml` (in project root)
+**Location:** `.milhouse/config.yaml` (in project root)
 
 **Scope:** Applies only to this project
 
@@ -225,9 +225,9 @@ phases:
 
 ### User Global Config
 
-**Location:** `~/.millhouse/config.yaml` (in home directory)
+**Location:** `~/.milhouse/config.yaml` (in home directory)
 
-**Scope:** Applies to all Millhouse projects on this machine
+**Scope:** Applies to all Milhouse projects on this machine
 
 **Use for:** Personal preferences (preferred model, token budget)
 
@@ -238,14 +238,14 @@ When the same setting appears in multiple places, this is the precedence order:
 ```
 CLI flag (--planner-model haiku)
     ↓
-Project config (.millhouse/config.yaml)
+Project config (.milhouse/config.yaml)
     ↓
-User global config (~/.millhouse/config.yaml)
+User global config (~/.milhouse/config.yaml)
     ↓
 Built-in defaults
 ```
 
-Example: If your project config uses `sonnet`, but you run `mill run 1 --planner-model haiku`, then Haiku is used.
+Example: If your project config uses `sonnet`, but you run `mil run 1 --planner-model haiku`, then Haiku is used.
 
 ## Validation
 
@@ -286,11 +286,11 @@ phases:
 ## Tips and Best Practices
 
 1. **Start with defaults** - The built-in defaults are reasonable for most projects
-2. **Use project config** for team settings - Commit `.millhouse/config.yaml` to version control
-3. **Use user config** for personal preferences - Keep `~/.millhouse/config.yaml` local
-4. **Use CLI flags** for one-off experiments - `mill run 1 --planner-model haiku`
-5. **Use `mill config show`** to verify your effective configuration before running
-6. **Document your strategy** - Add comments to `.millhouse/config.yaml` explaining your choices
+2. **Use project config** for team settings - Commit `.milhouse/config.yaml` to version control
+3. **Use user config** for personal preferences - Keep `~/.milhouse/config.yaml` local
+4. **Use CLI flags** for one-off experiments - `mil run 1 --planner-model haiku`
+5. **Use `mil config show`** to verify your effective configuration before running
+6. **Document your strategy** - Add comments to `.milhouse/config.yaml` explaining your choices
 7. **Monitor costs** - Higher token limits and better models cost more; monitor usage
 
 ## Troubleshooting
@@ -300,7 +300,7 @@ phases:
 Check what configuration is actually being used:
 
 ```bash
-mill config show
+mil config show
 ```
 
 Remember the precedence order - CLI flags override file configs.
@@ -313,16 +313,16 @@ Configuration values are validated when loaded. Check:
 - Token limits are between 10,000 and 200,000
 - Progress lines are between 10 and 1,000
 
-Use `mill config edit` to fix values interactively with validation.
+Use `mil config edit` to fix values interactively with validation.
 
 ### Permission denied on config file
 
 Ensure the config file is readable:
 
 ```bash
-chmod 644 .millhouse/config.yaml
-chmod 755 ~/.millhouse/
-chmod 644 ~/.millhouse/config.yaml
+chmod 644 .milhouse/config.yaml
+chmod 755 ~/.milhouse/
+chmod 644 ~/.milhouse/config.yaml
 ```
 
 ## Future Enhancements

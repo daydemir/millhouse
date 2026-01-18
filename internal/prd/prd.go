@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	MillhouseDir = ".millhouse"
+	MillhouseDir = ".milhouse"
 	PRDFile      = "prd.json"
 	ProgressFile = "progress.md"
 	PromptFile   = "prompt.md"
@@ -182,14 +182,14 @@ func (p *PRDFileData) FindByID(id string) *PRD {
 	return nil
 }
 
-// MillhouseExists checks if .millhouse directory exists
+// MillhouseExists checks if .milhouse directory exists
 func MillhouseExists(basePath string) bool {
 	path := filepath.Join(basePath, MillhouseDir)
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
 
-// GetMillhousePath returns the full path to a millhouse file
+// GetMillhousePath returns the full path to a.milhouse file
 func GetMillhousePath(basePath, filename string) string {
 	return filepath.Join(basePath, MillhouseDir, filename)
 }

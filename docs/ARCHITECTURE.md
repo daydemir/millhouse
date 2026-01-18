@@ -1,10 +1,10 @@
-# Millhouse Architecture
+# Milhouse Architecture
 
-This document describes the architecture of Millhouse, an autonomous PRD (Product Requirements Document) execution system.
+This document describes the architecture of Milhouse, an autonomous PRD (Product Requirements Document) execution system.
 
 ## Overview
 
-Millhouse uses a three-phase iteration cycle to implement PRDs autonomously:
+Milhouse uses a three-phase iteration cycle to implement PRDs autonomously:
 
 ```
 ┌─────────┐     ┌─────────┐     ┌──────────┐
@@ -62,7 +62,7 @@ The Planner agent runs at the start of each iteration when there are open PRDs a
 - Select the best candidate PRD to work on
 - Explore the codebase to understand implementation context
 - Create a detailed implementation plan
-- Save plan to `.millhouse/plans/{prd-id}-plan.md`
+- Save plan to `.milhouse/plans/{prd-id}-plan.md`
 - Set PRD state to "active" with `activePlan` path
 
 **Signals:**
@@ -108,7 +108,7 @@ The Reviewer agent runs after the Builder phase to verify work and manage plans.
 ## File Organization
 
 ```
-.millhouse/
+.milhouse/
 ├── prd.json           # PRD definitions and state
 ├── progress.md        # Iteration logs and learnings
 ├── prompt.md          # Codebase patterns and context
