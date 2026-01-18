@@ -145,24 +145,6 @@ mil status
 | `mil config edit` | Edit configuration (model, tokens, etc.) |
 | `mil config show` | Display current configuration |
 
-**Common patterns:**
-
-```bash
-# Add new feature
-mil chat "Add POST /api/users endpoint with validation"
-mil run 3
-
-# Refactor code
-mil chat "Refactor auth module for readability"
-mil run 2
-
-# Use specific model
-mil chat --model opus
-mil run 1 --builder-model opus
-```
-
-For detailed configuration options, see [CONFIGURATION.md](docs/CONFIGURATION.md).
-
 ## Common Pitfalls
 
 ### False Blockers
