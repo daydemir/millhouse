@@ -10,6 +10,7 @@
 > **Use at your own risk.** Milhouse runs with `--dangerously-skip-permissions` under the hood.
 >
 > **Recommended:**
+> - Run in a sandboxed environment
 > - Use [Claude Code Safety Net](https://github.com/kenryu42/claude-code-safety-net) for protection
 > - Claude Code Max plan recommended (consumes significant tokens)
 > - Start with small iterations to understand behavior
