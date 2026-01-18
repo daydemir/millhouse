@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -91,6 +92,9 @@ func Load(basePath string) (*Config, error) {
 	if err == nil {
 		if userCfg, err := loadFromFile(userGlobalPath); err == nil {
 			cfg = userCfg
+		} else {
+			// Log which file failed, but continue with defaults
+			log.Printf("Warning: failed to load user config from %s: %v", userGlobalPath, err)
 		}
 	}
 
@@ -113,21 +117,48 @@ func Load(basePath string) (*Config, error) {
 func loadFromFile(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file %s: %w", path, err)
 	}
 
 	cfg := &Config{}
 	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
+		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 
 	return cfg, nil
 }
 
+// deduplicateStrings removes duplicate strings from a slice while preserving order
+func deduplicateStrings(items []string) []string {
+	seen := make(map[string]bool)
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
 // mergeConfigs merges override config into base config
 // Non-empty values in override take precedence
+// Creates a deep copy to avoid mutating the base config
 func mergeConfigs(base, override *Config) *Config {
-	result := base
+	// Create a new config, copying all values from base
+	result := &Config{
+		Global: GlobalConfig{
+			Model:     base.Global.Model,
+			MaxTokens: base.Global.MaxTokens,
+		},
+		ContextFiles: make([]string, len(base.ContextFiles)),
+	}
+	copy(result.ContextFiles, base.ContextFiles)
+
+	// Copy phase configs
+	result.Phases.Planner = base.Phases.Planner
+	result.Phases.Builder = base.Phases.Builder
+	result.Phases.Reviewer = base.Phases.Reviewer
 
 	// Merge global config
 	if override.Global.Model != "" {
@@ -168,8 +199,9 @@ func mergeConfigs(base, override *Config) *Config {
 		result.Phases.Reviewer.ProgressLines = override.Phases.Reviewer.ProgressLines
 	}
 
-	// Merge context files (append instead of replace)
-	result.ContextFiles = append(base.ContextFiles, override.ContextFiles...)
+	// Merge context files with deduplication
+	allFiles := append(base.ContextFiles, override.ContextFiles...)
+	result.ContextFiles = deduplicateStrings(allFiles)
 
 	return result
 }
@@ -182,7 +214,7 @@ func Save(basePath string, cfg *Config) error {
 
 	configDir := filepath.Join(basePath, MillhouseDir)
 	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+		return fmt.Errorf("failed to create config directory %s: %w", configDir, err)
 	}
 
 	configPath := filepath.Join(configDir, ConfigFile)
@@ -192,7 +224,7 @@ func Save(basePath string, cfg *Config) error {
 	}
 
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("failed to write config file %s: %w", configPath, err)
 	}
 
 	return nil
@@ -201,6 +233,11 @@ func Save(basePath string, cfg *Config) error {
 // GetPhaseConfig returns the effective configuration for a specific phase
 // It applies global fallbacks for any unset phase-specific values
 func (c *Config) GetPhaseConfig(phase string) PhaseConfig {
+	// Nil guard - return default if receiver is nil
+	if c == nil {
+		return DefaultConfig().GetPhaseConfig(phase)
+	}
+
 	var phaseConfig PhaseConfig
 
 	switch phase {
@@ -211,6 +248,7 @@ func (c *Config) GetPhaseConfig(phase string) PhaseConfig {
 	case "reviewer":
 		phaseConfig = c.Phases.Reviewer
 	default:
+		log.Printf("Warning: unknown phase '%s', using planner config as fallback", phase)
 		phaseConfig = c.Phases.Planner // default fallback
 	}
 

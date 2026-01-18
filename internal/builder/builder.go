@@ -25,6 +25,11 @@ type BuilderResult struct {
 
 // Run executes the builder agent to implement the active PRD's plan
 func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) (*BuilderResult, error) {
+	// Nil guard - use default config if none provided
+	if cfg == nil {
+		cfg = config.DefaultConfig()
+	}
+
 	// Get the active PRD
 	activePRDs := prdFile.GetActivePRDs()
 	if len(activePRDs) == 0 {

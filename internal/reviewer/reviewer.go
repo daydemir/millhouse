@@ -25,6 +25,11 @@ type ReviewerResult struct {
 
 // Run executes the reviewer agent
 func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iteration int, cfg *config.Config) (*ReviewerResult, error) {
+	// Nil guard - use default config if none provided
+	if cfg == nil {
+		cfg = config.DefaultConfig()
+	}
+
 	result := &ReviewerResult{}
 
 	prompt := buildReviewerPrompt(basePath, prdFile, iteration, cfg)

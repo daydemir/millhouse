@@ -88,6 +88,12 @@ func runRun(cmd *cobra.Command, args []string) error {
 	cfg.ApplyOverrides(plannerModelFlag, builderModelFlag, reviewerModelFlag,
 		plannerTokensFlag, builderTokensFlag, reviewerTokensFlag)
 
+	// Validate configuration after applying overrides
+	if err := cfg.Validate(); err != nil {
+		d.Error(fmt.Sprintf("Invalid configuration from CLI flags: %v", err))
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Create context for the run
 	ctx := context.Background()
 

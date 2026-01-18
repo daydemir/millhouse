@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -285,80 +286,129 @@ func (e *Editor) saveConfig() error {
 	// Parse and validate all fields
 	newConfig := DefaultConfig()
 
+	validModels := map[string]bool{
+		ModelHaiku:  true,
+		ModelSonnet: true,
+		ModelOpus:   true,
+	}
+
 	// Global settings
-	globalModel := e.inputs["globalModel"].Value()
+	globalModel := strings.TrimSpace(e.inputs["globalModel"].Value())
 	if globalModel != "" {
+		if !validModels[globalModel] {
+			return fmt.Errorf("invalid global model '%s': must be 'haiku', 'sonnet', or 'opus'", globalModel)
+		}
 		newConfig.Global.Model = globalModel
 	}
 
-	if globalTokensStr := e.inputs["globalMaxTokens"].Value(); globalTokensStr != "" {
+	if globalTokensStr := strings.TrimSpace(e.inputs["globalMaxTokens"].Value()); globalTokensStr != "" {
 		if tokens, err := strconv.Atoi(globalTokensStr); err == nil {
+			if tokens < MinTokens || tokens > MaxTokens {
+				return fmt.Errorf("invalid global maxTokens %d: must be between %d and %d",
+					tokens, MinTokens, MaxTokens)
+			}
 			newConfig.Global.MaxTokens = tokens
 		} else {
-			return fmt.Errorf("invalid global maxTokens: %w", err)
+			return fmt.Errorf("invalid global maxTokens '%s': must be a number", globalTokensStr)
 		}
 	}
 
 	// Planner settings
-	if plannerModel := e.inputs["plannerModel"].Value(); plannerModel != "" {
+	plannerModel := strings.TrimSpace(e.inputs["plannerModel"].Value())
+	if plannerModel != "" {
+		if !validModels[plannerModel] {
+			return fmt.Errorf("invalid planner model '%s': must be 'haiku', 'sonnet', or 'opus'", plannerModel)
+		}
 		newConfig.Phases.Planner.Model = plannerModel
 	}
 
-	if plannerTokensStr := e.inputs["plannerMaxTokens"].Value(); plannerTokensStr != "" {
+	if plannerTokensStr := strings.TrimSpace(e.inputs["plannerMaxTokens"].Value()); plannerTokensStr != "" {
 		if tokens, err := strconv.Atoi(plannerTokensStr); err == nil {
+			if tokens < MinTokens || tokens > MaxTokens {
+				return fmt.Errorf("invalid planner maxTokens %d: must be between %d and %d",
+					tokens, MinTokens, MaxTokens)
+			}
 			newConfig.Phases.Planner.MaxTokens = tokens
 		} else {
-			return fmt.Errorf("invalid planner maxTokens: %w", err)
+			return fmt.Errorf("invalid planner maxTokens '%s': must be a number", plannerTokensStr)
 		}
 	}
 
-	if plannerLinesStr := e.inputs["plannerProgressLines"].Value(); plannerLinesStr != "" {
+	if plannerLinesStr := strings.TrimSpace(e.inputs["plannerProgressLines"].Value()); plannerLinesStr != "" {
 		if lines, err := strconv.Atoi(plannerLinesStr); err == nil {
+			if lines < MinProgressLines || lines > MaxProgressLines {
+				return fmt.Errorf("invalid planner progressLines %d: must be between %d and %d",
+					lines, MinProgressLines, MaxProgressLines)
+			}
 			newConfig.Phases.Planner.ProgressLines = lines
 		} else {
-			return fmt.Errorf("invalid planner progressLines: %w", err)
+			return fmt.Errorf("invalid planner progressLines '%s': must be a number", plannerLinesStr)
 		}
 	}
 
 	// Builder settings
-	if builderModel := e.inputs["builderModel"].Value(); builderModel != "" {
+	builderModel := strings.TrimSpace(e.inputs["builderModel"].Value())
+	if builderModel != "" {
+		if !validModels[builderModel] {
+			return fmt.Errorf("invalid builder model '%s': must be 'haiku', 'sonnet', or 'opus'", builderModel)
+		}
 		newConfig.Phases.Builder.Model = builderModel
 	}
 
-	if builderTokensStr := e.inputs["builderMaxTokens"].Value(); builderTokensStr != "" {
+	if builderTokensStr := strings.TrimSpace(e.inputs["builderMaxTokens"].Value()); builderTokensStr != "" {
 		if tokens, err := strconv.Atoi(builderTokensStr); err == nil {
+			if tokens < MinTokens || tokens > MaxTokens {
+				return fmt.Errorf("invalid builder maxTokens %d: must be between %d and %d",
+					tokens, MinTokens, MaxTokens)
+			}
 			newConfig.Phases.Builder.MaxTokens = tokens
 		} else {
-			return fmt.Errorf("invalid builder maxTokens: %w", err)
+			return fmt.Errorf("invalid builder maxTokens '%s': must be a number", builderTokensStr)
 		}
 	}
 
-	if builderLinesStr := e.inputs["builderProgressLines"].Value(); builderLinesStr != "" {
+	if builderLinesStr := strings.TrimSpace(e.inputs["builderProgressLines"].Value()); builderLinesStr != "" {
 		if lines, err := strconv.Atoi(builderLinesStr); err == nil {
+			if lines < MinProgressLines || lines > MaxProgressLines {
+				return fmt.Errorf("invalid builder progressLines %d: must be between %d and %d",
+					lines, MinProgressLines, MaxProgressLines)
+			}
 			newConfig.Phases.Builder.ProgressLines = lines
 		} else {
-			return fmt.Errorf("invalid builder progressLines: %w", err)
+			return fmt.Errorf("invalid builder progressLines '%s': must be a number", builderLinesStr)
 		}
 	}
 
 	// Reviewer settings
-	if reviewerModel := e.inputs["reviewerModel"].Value(); reviewerModel != "" {
+	reviewerModel := strings.TrimSpace(e.inputs["reviewerModel"].Value())
+	if reviewerModel != "" {
+		if !validModels[reviewerModel] {
+			return fmt.Errorf("invalid reviewer model '%s': must be 'haiku', 'sonnet', or 'opus'", reviewerModel)
+		}
 		newConfig.Phases.Reviewer.Model = reviewerModel
 	}
 
-	if reviewerTokensStr := e.inputs["reviewerMaxTokens"].Value(); reviewerTokensStr != "" {
+	if reviewerTokensStr := strings.TrimSpace(e.inputs["reviewerMaxTokens"].Value()); reviewerTokensStr != "" {
 		if tokens, err := strconv.Atoi(reviewerTokensStr); err == nil {
+			if tokens < MinTokens || tokens > MaxTokens {
+				return fmt.Errorf("invalid reviewer maxTokens %d: must be between %d and %d",
+					tokens, MinTokens, MaxTokens)
+			}
 			newConfig.Phases.Reviewer.MaxTokens = tokens
 		} else {
-			return fmt.Errorf("invalid reviewer maxTokens: %w", err)
+			return fmt.Errorf("invalid reviewer maxTokens '%s': must be a number", reviewerTokensStr)
 		}
 	}
 
-	if reviewerLinesStr := e.inputs["reviewerProgressLines"].Value(); reviewerLinesStr != "" {
+	if reviewerLinesStr := strings.TrimSpace(e.inputs["reviewerProgressLines"].Value()); reviewerLinesStr != "" {
 		if lines, err := strconv.Atoi(reviewerLinesStr); err == nil {
+			if lines < MinProgressLines || lines > MaxProgressLines {
+				return fmt.Errorf("invalid reviewer progressLines %d: must be between %d and %d",
+					lines, MinProgressLines, MaxProgressLines)
+			}
 			newConfig.Phases.Reviewer.ProgressLines = lines
 		} else {
-			return fmt.Errorf("invalid reviewer progressLines: %w", err)
+			return fmt.Errorf("invalid reviewer progressLines '%s': must be a number", reviewerLinesStr)
 		}
 	}
 

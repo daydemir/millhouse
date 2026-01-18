@@ -29,6 +29,11 @@ type PlannerResult struct {
 
 // Run executes the planner agent to select a PRD and create a plan
 func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, cfg *config.Config) (*PlannerResult, error) {
+	// Nil guard - use default config if none provided
+	if cfg == nil {
+		cfg = config.DefaultConfig()
+	}
+
 	result := &PlannerResult{}
 
 	// Check if we should run

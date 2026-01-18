@@ -324,3 +324,227 @@ func TestValidProgressLinesRange(t *testing.T) {
 		})
 	}
 }
+
+// TestMergeConfigsNoMutation verifies that mergeConfigs creates a deep copy
+// and doesn't mutate the base configuration
+func TestMergeConfigsNoMutation(t *testing.T) {
+	base := DefaultConfig()
+	base.Global.Model = ModelSonnet
+	base.Phases.Planner.Model = ModelSonnet
+
+	override := &Config{}
+	override.Global.Model = ModelHaiku
+	override.Phases.Planner.Model = ModelHaiku
+
+	merged := mergeConfigs(base, override)
+
+	// Verify base was not modified
+	if base.Global.Model != ModelSonnet {
+		t.Errorf("mergeConfigs mutated base config: expected %s, got %s", ModelSonnet, base.Global.Model)
+	}
+
+	if base.Phases.Planner.Model != ModelSonnet {
+		t.Errorf("mergeConfigs mutated base planner model: expected %s, got %s", ModelSonnet, base.Phases.Planner.Model)
+	}
+
+	// Verify merged has override values
+	if merged.Global.Model != ModelHaiku {
+		t.Errorf("Expected merged global model %s, got %s", ModelHaiku, merged.Global.Model)
+	}
+
+	if merged.Phases.Planner.Model != ModelHaiku {
+		t.Errorf("Expected merged planner model %s, got %s", ModelHaiku, merged.Phases.Planner.Model)
+	}
+}
+
+// TestGetPhaseConfigNilReceiver verifies that GetPhaseConfig safely handles
+// being called on a nil receiver
+func TestGetPhaseConfigNilReceiver(t *testing.T) {
+	var cfg *Config = nil
+
+	// Should not panic
+	phaseConfig := cfg.GetPhaseConfig("planner")
+
+	// Should return defaults
+	if phaseConfig.Model != ModelSonnet {
+		t.Errorf("Expected default model %s, got %s", ModelSonnet, phaseConfig.Model)
+	}
+
+	if phaseConfig.MaxTokens != 80000 {
+		t.Errorf("Expected default maxTokens 80000, got %d", phaseConfig.MaxTokens)
+	}
+
+	if phaseConfig.ProgressLines != 20 {
+		t.Errorf("Expected default progressLines 20, got %d", phaseConfig.ProgressLines)
+	}
+}
+
+// TestContextFileDeduplication verifies that context files are deduplicated
+// when merging configs
+func TestContextFileDeduplication(t *testing.T) {
+	base := &Config{}
+	base.ContextFiles = []string{"docs/README.md", "CONTRIBUTING.md"}
+
+	override := &Config{}
+	override.ContextFiles = []string{"CONTRIBUTING.md", "LICENSE"}
+
+	merged := mergeConfigs(base, override)
+
+	// Should have 3 unique files, not 4
+	if len(merged.ContextFiles) != 3 {
+		t.Errorf("Expected 3 unique files, got %d", len(merged.ContextFiles))
+	}
+
+	// Check for duplicates
+	seen := make(map[string]bool)
+	for _, file := range merged.ContextFiles {
+		if seen[file] {
+			t.Errorf("Duplicate file in merged context: %s", file)
+		}
+		seen[file] = true
+	}
+
+	// Verify all expected files are present
+	expectedFiles := map[string]bool{
+		"docs/README.md":   true,
+		"CONTRIBUTING.md":  true,
+		"LICENSE":          true,
+	}
+
+	for _, file := range merged.ContextFiles {
+		if !expectedFiles[file] {
+			t.Errorf("Unexpected file in merged context: %s", file)
+		}
+	}
+}
+
+// TestLoadInvalidYAML verifies that loading invalid YAML is handled gracefully
+func TestLoadInvalidYAML(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "config-test-invalid-yaml-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create .millhouse directory
+	millhouseDir := filepath.Join(tmpDir, MillhouseDir)
+	if err := os.MkdirAll(millhouseDir, 0755); err != nil {
+		t.Fatalf("Failed to create .millhouse directory: %v", err)
+	}
+
+	// Write invalid YAML
+	configPath := filepath.Join(millhouseDir, ConfigFile)
+	if err := os.WriteFile(configPath, []byte("invalid: yaml: content: ]["), 0644); err != nil {
+		t.Fatalf("Failed to write invalid YAML: %v", err)
+	}
+
+	// Should handle gracefully and use defaults
+	cfg, err := Load(tmpDir)
+	if err != nil {
+		t.Errorf("Expected error to be nil (using defaults), got: %v", err)
+	}
+
+	if cfg == nil {
+		t.Errorf("Expected config to not be nil when loading invalid YAML")
+	}
+}
+
+// TestCLIFlagOverridesValidation verifies that invalid CLI flag values are rejected
+func TestCLIFlagOverridesValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		planner string
+		builder string
+		reviewer string
+		plannerTokens int
+		builderTokens int
+		reviewerTokens int
+		wantErr bool
+	}{
+		{
+			name: "valid overrides",
+			planner: ModelHaiku,
+			builder: ModelSonnet,
+			reviewer: ModelOpus,
+			plannerTokens: 50000,
+			builderTokens: 150000,
+			reviewerTokens: 80000,
+			wantErr: false,
+		},
+		{
+			name: "invalid model",
+			planner: "invalid-model",
+			wantErr: true,
+		},
+		{
+			name: "tokens too low",
+			plannerTokens: 5000,
+			wantErr: true,
+		},
+		{
+			name: "tokens too high",
+			builderTokens: 300000,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := DefaultConfig()
+			cfg.ApplyOverrides(tt.planner, tt.builder, tt.reviewer,
+				tt.plannerTokens, tt.builderTokens, tt.reviewerTokens)
+
+			err := cfg.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestDeduplicateStrings verifies deduplication behavior
+func TestDeduplicateStrings(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "no duplicates",
+			input:    []string{"a", "b", "c"},
+			expected: []string{"a", "b", "c"},
+		},
+		{
+			name:     "with duplicates",
+			input:    []string{"a", "b", "a", "c", "b"},
+			expected: []string{"a", "b", "c"},
+		},
+		{
+			name:     "empty list",
+			input:    []string{},
+			expected: []string{},
+		},
+		{
+			name:     "all duplicates",
+			input:    []string{"a", "a", "a"},
+			expected: []string{"a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := deduplicateStrings(tt.input)
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Expected %d items, got %d", len(tt.expected), len(result))
+				return
+			}
+
+			for i, v := range result {
+				if v != tt.expected[i] {
+					t.Errorf("Expected %s at index %d, got %s", tt.expected[i], i, v)
+				}
+			}
+		})
+	}
+}
