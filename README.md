@@ -1,10 +1,10 @@
 # Milhouse
 
-## claude code ralph loops, with glasses
+> autonomous claude code ralph loops, but with glasses
 
-![milhouse](https://static.wikia.nocookie.net/springfieldbound/images/2/23/Milhouse_Van_Houten_%28Official_Image%29.png)
+![milhouse](assets/milhouse.webp)
 
-> [!WARNING]
+> [!CAUTION]
 > **Use at your own risk.** Milhouse runs with `--dangerously-skip-permissions` under the hood.
 >
 > **Recommended:**
