@@ -2,7 +2,7 @@
 
 > autonomous claude code ralph loops, but with glasses
 
-![milhouse](assets/milhouse.webp)
+<img src="assets/milhouse.webp" alt="milhouse" height="300">
 
 > [!CAUTION]
 > **Use at your own risk.** Milhouse runs with `--dangerously-skip-permissions` under the hood.
@@ -59,19 +59,6 @@ Milhouse automates development through three phases:
 **PRD States:** Open → Active → Pending → Complete
 
 Each iteration cycles through all phases. Run `mil run 1` for one iteration, `mil run 5` for five, etc.
-
-## Why Milhouse
-
-| Aspect | Manual Coding | Claude Only | Milhouse |
-|--------|---|---|---|
-| **Planning** | Manual, time-consuming | No structured output | Automatic PRD generation |
-| **Iteration** | Requires human feedback | Single response | Built-in multi-phase loops |
-| **Verification** | Manual testing | No verification | Automatic reviewer phase |
-| **Cost Control** | N/A | Fixed per request | Configurable via phases/model |
-
-**Best for:** Scaling workflows, rapid prototyping, batch processing, cost-controlled autonomous coding
-
-**Not ideal for:** Real-time development, highly specialized domains, projects requiring deep domain expertise
 
 ## Prerequisites & Installation
 
