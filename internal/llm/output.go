@@ -156,11 +156,13 @@ func (h *ConsoleHandler) OnText(text string) {
 	// Check for WORKING ON pattern and highlight
 	if matches := workingOnPattern.FindStringSubmatch(text); matches != nil {
 		h.display.ActivePRD(matches[1])
-		return // Don't double-print
+		h.toolCount = 0 // Reset after display
+		return          // Don't double-print
 	}
 
-	// Stream text with subdued styling
-	h.display.ClaudeStreaming(text)
+	// Display text with tool count and tokens (fixes empty rows issue)
+	h.display.ClaudeWithTokens(text, h.toolCount, h.tokenStats.TotalTokens, h.tokenThreshold)
+	h.toolCount = 0 // Reset after display
 }
 
 func (h *ConsoleHandler) OnDone(result string) {
@@ -186,11 +188,7 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 	h.tokenStats.OutputTokens += usage.OutputTokens
 	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
-	// Display token usage with styled output
-	h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
-
-	// Reset tool count after displaying
-	h.toolCount = 0
+	// NOTE: No display here - token info is displayed with text in OnText()
 
 	// Check threshold and trigger termination if exceeded
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
@@ -215,13 +213,7 @@ func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
 	}
 	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
-	// CHANGED: Only display if enough time has passed since last display
-	now := time.Now()
-	if now.Sub(h.lastTokenDisplay) >= h.throttleInterval {
-		h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
-		h.toolCount = 0
-		h.lastTokenDisplay = now
-	}
+	// NOTE: No display here - token info is displayed with text in OnText()
 
 	// Check threshold and trigger termination if exceeded
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
