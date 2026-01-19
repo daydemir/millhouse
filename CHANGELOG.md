@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.4.6] - 2026-01-19
+
+### Added
+- **#55**: XML structure support in PRD notes and descriptions
+  - Chat agent now generates structured XML for complex notes (hints, blockers, gotchas, references)
+  - Planner parses XML `<blockers>` tags for automatic dependency detection
+  - Builder highlights XML hints and gotchas for implementation guidance
+  - Reviewer cross-checks XML gotchas and references during verification
+  - Fully backward compatible with plain text PRDs
+  - Note: XML is for agent-to-agent communication only, `mil status` output unchanged
+
+- **#38**: Thorough PRD validation in Planner
+  - Added validation step 1.5 between "Analyze PRDs" and "Select PRD"
+  - Validates logical coherence, architectural fit, assumptions, and feasibility
+  - Flags PRDs with vague criteria, contradictions, or missing details
+  - Blocks PRDs with severe issues (contradictory requirements, requires manual intervention)
+  - Includes comprehensive validation examples in planner.tmpl
+  - Documents validation findings in PRD notes using XML format
+
+- **#19**: Prompt template optimizations
+  - Created `internal/prompts/shared.tmpl` for common template partials
+  - Reduced template verbosity by ~50 lines while maintaining all functionality
+  - Standardized XML structure across all templates (element-based, consistent nesting)
+  - Added XML usage guidance to all agent templates
+
+### Changed
+- `internal/prompts/chat.tmpl` - Added XML format guidance with examples (45 lines added)
+- `internal/prompts/planner.tmpl` - Added validation step 1.5, XML parsing guidance, and validation examples (70 lines added)
+- `internal/prompts/builder.tmpl` - Added PRD notes parsing section, trimmed context_management (16 lines saved)
+- `internal/prompts/reviewer.tmpl` - Added XML awareness to verification and blocker evaluation (31 lines saved)
+- `internal/prompts/prompts.go` - Updated to load shared.tmpl with template cloning
+- `internal/prompts/planner.tmpl` - Changed `<prds status="open">` to `<prds><status>open</status>`
+- `internal/prompts/reviewer.tmpl` - Changed `<plan prd="...">` to `<plan><prd_id>...</prd_id>`
+
+### Improved
+- PRD quality through Chat agent's XML schema guidance
+- Agent communication through structured XML parsing
+- Planner thoroughness through assumption validation
+- Template maintainability through shared partials
+- Prompt clarity through reduced verbosity
+
+### Technical
+- Template line count: ~807 → ~760 (6% reduction) while adding significant functionality
+- Agents parse XML as text using natural language understanding (no Go parsing utilities needed)
+- All template changes are backward compatible with existing plain text PRDs
+
+### Breaking Changes
+None - all changes are backward compatible with existing PRDs.
+
+### Migration Notes
+No action required. XML format is optional and only used when Chat agent determines it's beneficial:
+- Existing plain text PRDs continue to work unchanged
+- New PRDs may use XML for complex notes via Chat agent
+- Both formats work simultaneously
+- Planner validation works with both XML and plain text formats
+
 ## [0.4.4] - 2026-01-19
 
 ### Critical Fixes

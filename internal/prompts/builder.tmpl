@@ -14,9 +14,40 @@ You have ONE active PRD with a detailed implementation plan - follow it step by 
 {{.PromptMD}}
 </codebase_patterns>
 
+{{if .BuilderAugmentation}}
+<project_specific_builder_augmentation>
+{{.BuilderAugmentation}}
+</project_specific_builder_augmentation>
+{{end}}
+
+<xml_usage_guidance>
+- Parse XML in PRD notes/descriptions for implementation guidance (hints, blockers, gotchas, references)
+- When writing to progress.md, use XML for categorized learnings if you have multiple types
+- XML structure helps future agents understand your work better
+- Agent-to-agent communication benefits from XML structure
+</xml_usage_guidance>
+
 <active_prd>
 {{.ActivePRDJSON}}
 </active_prd>
+
+<prd_notes_parsing>
+Your PRD may contain structured XML in the description and notes fields:
+
+If description contains XML:
+- <summary>: The core task (what to build)
+- <context><background>: Why this work matters
+- <context><assumptions>: Implicit assumptions being made
+
+If notes contains XML:
+- <hints>: Best practices and patterns to follow
+- <blockers>: Dependencies or external blockers (may affect feasibility)
+- <gotchas>: Edge cases and pitfalls to watch out for
+- <references>: Files or docs to consult for guidance
+
+Pay special attention to <hints> and <gotchas> - they contain valuable implementation guidance.
+Plain text notes work exactly as before.
+</prd_notes_parsing>
 
 <implementation_plan>
 {{.PlanContent}}
@@ -68,6 +99,12 @@ ALWAYS append to progress.md (never replace):
   - Patterns discovered
   - Gotchas encountered
   - Useful context
+
+When adding notes about this PRD, extract key information from XML if present:
+- Document any <gotchas> you encountered and how you handled them
+- Note any <hints> that were particularly helpful or accurate
+- Reference any <ref> files you examined and what you learned
+
 ---
 
 If you discover a reusable pattern, add it to "## Codebase Patterns" at TOP of progress.md.
@@ -97,9 +134,23 @@ When ALL acceptance criteria pass:
    - What was done (summary)
    - Acceptance criteria checklist (all checked)
    - Verification output (test/build results)
-   - Files changed
-   - Git commit SHAs
+   - Files changed (EXACT paths)
+   - Git commit SHAs (MUST be real commits with git log output)
    - Plan adherence notes (did you follow the plan?)
+   - Verification Evidence (for Reviewer's git checks):
+     ```bash
+     # Commit verification
+     $ git show --name-only {commit-sha}
+     {paste actual output}
+
+     # Working tree status
+     $ git status --porcelain
+     {paste actual output - should be clean}
+
+     # Remote sync status
+     $ git rev-list @{u}..HEAD
+     {paste actual output - should be empty}
+     ```
 3. Signal: ###PRD_COMPLETE###
 
 When running out of context (~80-90K tokens):
@@ -123,30 +174,14 @@ When blocked (need human help):
 </constraints>
 
 <context_management>
-Milhouse monitors your token usage and will terminate at 100K tokens as a safety net.
+Milhouse terminates at 100K tokens. Quality degrades: 0-30K (Peak) | 30-50K (Good) | 50-70K (Degrading) | 70K+ (Poor)
 
-QUALITY DEGRADATION CURVE:
-| Context Usage | Quality | Your State |
-|---------------|---------|------------|
-| 0-30% (0-30K) | PEAK | Thorough, comprehensive |
-| 30-50% (30-50K) | GOOD | Confident, solid work |
-| 50-70% (50-70K) | DEGRADING | Efficiency mode begins |
-| 70%+ (70K+) | POOR | Rushed, minimal, error-prone |
+Monitor context burn: >50 tool calls without progress, 3+ retry loops on same fix, >20 files read without advancement
 
-SELF-MONITORING HEURISTICS:
-1. Tool call count: if > 50 without task completion, you're burning context
-2. Repeated errors: 3+ retries of same fix = stuck, bail out
-3. File reading volume: if > 20 files read without progress, context bloated
-
-PROACTIVE BAILOUT (at ~80K tokens):
-1. Append current progress to progress.md
-2. Update PRD notes with: what completed in plan, what remains
-3. Signal: ###BAILOUT:context_preservation###
-
-Valid bailout reasons:
-- context_preservation - Approaching token limit
-- partial_completion - Some work done, need fresh context
-- stuck_loop - Repeated failures, need different approach
+At ~80K tokens, proactive bailout:
+1. Append progress to progress.md
+2. Update PRD notes (completed steps, remaining work)
+3. Signal: ###BAILOUT:{context_preservation|partial_completion|stuck_loop}###
 </context_management>
 
 <subagent_usage>

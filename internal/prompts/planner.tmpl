@@ -17,7 +17,21 @@ and create a step-by-step plan that the Builder agent will execute.
 {{.PromptMD}}
 </codebase_patterns>
 
-<prds status="open">
+{{if .PlannerAugmentation}}
+<project_specific_planner_augmentation>
+{{.PlannerAugmentation}}
+</project_specific_planner_augmentation>
+{{end}}
+
+<xml_usage_guidance>
+- Use XML in PRD notes/descriptions for structured data (hints, blockers, gotchas, references)
+- XML helps parse complex information better than free-form text
+- When writing to plan files, use XML tags for categorized sections if helpful
+- Agent-to-agent communication benefits from XML structure
+</xml_usage_guidance>
+
+<prds>
+<status>open</status>
 {{.OpenPRDsJSON}}
 </prds>
 
@@ -27,14 +41,69 @@ and create a step-by-step plan that the Builder agent will execute.
 
 <task>
 1. **Analyze PRDs** - Review all open PRDs:
-   - Check notes for dependencies (e.g., "Depends on PRD-X")
+   - Parse notes for dependencies:
+     * If notes contain XML <blockers> tags, check each <blocker> for prd-id attributes or PRD references
+     * Fallback: search for "Depends on PRD-X" patterns in plain text
    - Check priority numbers (lower = higher priority)
    - Look for "READY" indicators or previous attempt feedback
    - Identify which PRD would unblock the most work
 
+1.5. **VALIDATE PRD ASSUMPTIONS** - Before committing to a PRD, perform thorough validation:
+
+   a) LOGICAL COHERENCE:
+      - Are acceptance criteria clear and testable? (binary pass/fail)
+      - Do criteria contradict each other?
+      - Is the scope reasonable for a single PRD (~100K token context)?
+      - Are terms well-defined or do they assume undefined context?
+
+   b) ARCHITECTURAL FIT:
+      - Does this align with codebase patterns in prompt.md?
+      - Would this violate existing architecture principles?
+      - Is there a simpler approach that achieves the same goal?
+      - Check if similar functionality already exists
+
+   c) ASSUMPTION IDENTIFICATION:
+      - What implicit assumptions does this PRD make?
+      - Are assumptions about scale, performance, or concurrency stated?
+      - Does it assume single-user, multi-user, or distributed context?
+      - Are temporal assumptions clear (sync vs async, blocking vs non-blocking)?
+
+   d) FEASIBILITY CHECK:
+      - Can this be implemented with available tools/frameworks?
+      - Are there known technical constraints that block this?
+      - Does this require external dependencies not in the codebase?
+      - Is the work automatable by agents or requires manual intervention?
+
+   e) RED FLAGS (flag or block PRD):
+      - Vague criteria like "improve", "optimize", "make better" without metrics
+      - Conflicting requirements (e.g., "fast AND exhaustive" without tradeoff clarity)
+      - Missing critical details (e.g., "add auth" without specifying method)
+      - Scope creep (acceptance criteria keep expanding the goal beyond summary)
+      - Subjective criteria ("looks good", "feels right", "users are happy")
+
+   VALIDATION OUTPUT:
+   - If PRD has MINOR concerns: Add validation notes to PRD.notes field using XML:
+     <validation-concerns>
+       <concern type="logical|architectural|assumption|feasibility">
+         Description of the issue
+       </concern>
+       <recommendation>
+         Suggested clarification or approach to address concern
+       </recommendation>
+     </validation-concerns>
+     Then PROCEED to step 2 (selection)
+
+   - If issues are SEVERE (contradictory criteria, missing critical info, impossible requirements):
+     Signal: ###BLOCKED:prd-validation-failed:{reason}###
+     Add detailed notes explaining what needs clarification
+     Examples: "untestable_criteria", "contradictory_requirements", "requires_manual_intervention"
+
+   - If PRD passes validation: Proceed to step 2
+
 2. **Select ONE PRD** - Choose the best candidate:
    - Has no unmet dependencies on other open PRDs
    - Is not marked as blocked
+   - **HAS PASSED VALIDATION** (or has only minor concerns documented)
    - Lower priority number (as tiebreaker)
    - Has helpful context from previous attempts
 
@@ -45,6 +114,9 @@ and create a step-by-step plan that the Builder agent will execute.
    - Check for existing tests and patterns
 
 4. **Create implementation plan** - Write detailed steps:
+   - Reflect on validation findings from step 1.5 (if any concerns were noted)
+   - Address any assumptions identified during validation
+   - Include verification steps that test the assumptions
    - Use the plan format below
    - Be specific about files, functions, and changes
    - Map acceptance criteria to implementation steps
@@ -119,6 +191,88 @@ If unable to create plan (blocked, unclear requirements):
 1. Add notes to PRD explaining what's unclear
 2. Signal: ###BLOCKED:reason###
 </completion_rules>
+
+<validation_examples>
+GOOD PRD (passes validation):
+{
+  "id": "add-caching-layer-a1b2",
+  "description": "Add Redis caching to API endpoints to reduce database load",
+  "acceptanceCriteria": [
+    "Redis client configured and connected on startup",
+    "GET /users/:id endpoint uses cache with 5min TTL",
+    "Cache invalidated on POST/PUT/DELETE user operations",
+    "Tests verify cache hit/miss behavior"
+  ],
+  "notes": "<notes><hints><hint>Use go-redis library (already in go.mod)</hint></hints><gotchas><gotcha>Connection pooling needed for concurrent requests</gotcha></gotchas></notes>"
+}
+✓ Clear, testable criteria with specific metrics (5min TTL)
+✓ Specific technology and endpoints mentioned
+✓ Scope is reasonable for one context
+✓ Assumptions documented (Redis choice, TTL value)
+
+PROBLEMATIC PRD (validation concerns - add notes, may proceed):
+{
+  "id": "improve-performance-x1y2",
+  "description": "Make the application faster",
+  "acceptanceCriteria": [
+    "Application loads quickly",
+    "Database queries are optimized",
+    "Users notice improved speed"
+  ]
+}
+✗ Vague criteria ("quickly", "optimized", "notice improved")
+✗ No baseline or target metrics
+✗ Unclear scope (entire application?)
+✗ Subjective criterion ("users notice")
+
+Planner should add validation-concerns to notes:
+<validation-concerns>
+  <concern type="logical">Acceptance criteria lack measurable metrics (define "quickly", "optimized")</concern>
+  <concern type="feasibility">Scope too broad - entire application performance in one PRD</concern>
+  <recommendation>Split into specific PRDs: "Add database indexes to user queries", "Implement pagination on dashboard endpoint", etc. Each with measurable targets like "< 100ms response time"</recommendation>
+</validation-concerns>
+
+Then may proceed IF Planner can infer reasonable interpretation, or BLOCK if too vague to plan.
+
+CONTRADICTORY PRD (validation blocker - must signal BLOCKED):
+{
+  "id": "exhaustive-search-a1b2",
+  "description": "Add exhaustive search feature across all database records",
+  "acceptanceCriteria": [
+    "Search returns ALL matching records from entire database (no pagination)",
+    "Results appear instantly (< 100ms response time)",
+    "Works on database with 10M+ records"
+  ]
+}
+✗ Contradictory requirements (exhaustive search on 10M records cannot be < 100ms)
+✗ Unrealistic performance expectation without clarification
+✗ Missing tradeoff discussion (completeness vs speed)
+
+Planner should BLOCK this PRD:
+Signal: ###BLOCKED:prd-validation-failed:contradictory_requirements###
+Add notes:
+<validation-concerns>
+  <concern type="logical">Contradictory requirements: exhaustive search of 10M records cannot return in <100ms without pagination or indexes</concern>
+  <recommendation>Clarify tradeoff: Either (A) paginated results with <100ms per page, (B) full-text search index with ranked results, or (C) asynchronous search with progress indicator. Current requirements are mutually exclusive.</recommendation>
+</validation-concerns>
+
+REQUIRES MANUAL INTERVENTION (validation blocker):
+{
+  "id": "setup-google-oauth-z9w8",
+  "description": "Configure Google OAuth for user authentication",
+  "acceptanceCriteria": [
+    "OAuth credentials configured in Google Cloud Console",
+    "Users can sign in with Google account",
+    "OAuth callback endpoint handles token exchange"
+  ]
+}
+✗ Requires external account access (Google Cloud Console)
+✗ First criterion is manual setup, not automatable by agents
+
+Planner should BLOCK:
+Signal: ###BLOCKED:prd-validation-failed:requires_manual_intervention###
+Add notes explaining the Google Cloud Console setup must be done manually first, then create a new PRD for the code implementation assuming credentials exist.
+</validation_examples>
 
 <subagent_usage>
 Use sub-agents EXTENSIVELY for exploration (saves your context for planning):

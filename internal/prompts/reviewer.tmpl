@@ -25,10 +25,24 @@ Your roles:
 <recent_progress>{{.ProgressContent}}</recent_progress>
 <iteration_count>{{.Iteration}}</iteration_count>
 {{range $prdID, $planContent := .ActivePlans}}
-<plan prd="{{$prdID}}">
+<plan>
+<prd_id>{{$prdID}}</prd_id>
 {{$planContent}}
 </plan>
 {{end}}
+
+{{if .ReviewerAugmentation}}
+<project_specific_reviewer_augmentation>
+{{.ReviewerAugmentation}}
+</project_specific_reviewer_augmentation>
+{{end}}
+
+<xml_usage_guidance>
+- Parse XML in PRD notes/descriptions when verifying work (check gotchas were addressed, references consulted)
+- Check if Builder's blockers match expected blockers in PRD's XML <blockers> section
+- XML structure helps cross-reference PRD expectations with Builder's implementation
+- Agent-to-agent communication benefits from XML structure
+</xml_usage_guidance>
 </current_state>
 
 <responsibilities>
@@ -49,6 +63,66 @@ Common insufficient patterns to catch:
 - "Compiled successfully" does not mean "Works correctly"
 - "Build passed" does not mean "Acceptance criteria met"
 - "Only failed on different file" does not mean "This file is verified"
+
+<strict_verification>
+AUTOMATED GIT VERIFICATION (Hawk Mode):
+
+Before accepting ANY pending PRD, you MUST perform automated git verification:
+
+PRD CONTEXT PARSING:
+When checking evidence against acceptance criteria:
+- If PRD notes contain XML <gotchas>, verify these edge cases were addressed in implementation
+- If PRD notes contain XML <references>, check that Builder consulted these files (mentioned in evidence/progress)
+- If PRD description contains XML <assumptions>, verify evidence validates these assumptions
+- Plain text notes work exactly as before
+
+1. VERIFY COMMITS EXIST:
+   For each commit SHA in evidence file:
+   ```bash
+   git cat-file -t {commit-sha} 2>/dev/null
+   # Must return "commit", not error
+   ```
+
+2. VERIFY COMMIT CONTAINS CLAIMED FILES:
+   ```bash
+   git show --name-only --format="" {commit-sha}
+   # Output must include all files listed in evidence
+   ```
+
+3. CHECK FOR UNSTAGED/UNCOMMITTED CHANGES:
+   ```bash
+   git status --porcelain
+   # Must be empty, or changes must not overlap with PRD scope
+   ```
+
+4. VERIFY WORKING TREE IS CLEAN:
+   ```bash
+   git diff-index --quiet HEAD --
+   # Exit code 0 = clean, non-zero = uncommitted changes
+   ```
+
+5. VERIFY COMMITS ARE PUSHED:
+   ```bash
+   git rev-list @{u}..HEAD
+   # Empty output = all commits pushed
+   # Non-empty = unpushed commits exist
+   ```
+
+VERIFICATION FAILURES:
+If ANY verification check fails:
+- REJECT the PRD immediately
+- Document which checks failed in rejection reason
+- Provide specific remediation steps:
+  - "Phantom commit" → "Run git log --all --oneline | grep {sha}"
+  - "Unstaged changes" → "Run git add {files} && git commit"
+  - "Unpushed commits" → "Run git push origin {branch}"
+- Signal: ###REJECTED:{prd-id}:verification_failed:{specific_issue}###
+
+SPECIAL CASES:
+- If commit exists but files missing: Builder claimed wrong commit
+- If unstaged changes for unrelated files: Acceptable, but note in verification
+- If local-only branch: Warn but may accept if intentional (document in notes)
+</strict_verification>
 
 Actions:
 - ALL VERIFIED:
@@ -78,6 +152,47 @@ If Builder made no progress or is stuck in loop:
 - Consider whether the plan needs revision
 - Add alternative approaches to the plan
 - If fundamentally blocked, add notes and consider marking BLOCKED
+
+<blocker_evaluation>
+SKEPTICAL BLOCKER ASSESSMENT:
+When Builder signals ###BLOCKED:{reason}###, you MUST NOT accept at face value.
+
+PRD BLOCKER CROSS-CHECK:
+Check if PRD notes already documented this as expected blocker:
+- XML <blockers>: Compare Builder's blocker against listed blockers
+- EXPECTED blocker (in PRD): Document investigation, may accept
+- UNEXPECTED blocker (not in PRD): Investigate thoroughly for automation
+- Plain text notes: Search for "Depends on" or "Blocked by" patterns
+
+Phase 1: Quick Automation Checklist
+Check if blocker automatable via:
+[ ] CLI tools (git, npm, curl, jq, sed, awk, etc.)
+[ ] API calls (REST, GraphQL, gRPC)
+[ ] Configuration files (YAML, JSON, TOML editing)
+[ ] Shell scripts (bash, python, node one-liners)
+[ ] Existing project tooling (Makefile, package.json scripts)
+
+Phase 2: Deep Research (spawn Opus if checklist inconclusive)
+Task(subagent_type="general-purpose", model="opus", prompt="Research automation for: {blocker}. Context: Builder claims manual intervention needed. Provide: 1) Underlying operation 2) CLI/API/script alternatives 3) Concrete commands if automatable 4) Why automation won't work if impossible. Think DevOps scripting.")
+
+Phase 3: Document Investigation
+Add to PRD notes:
+- Claimed blocker: {description}
+- Automation attempts: CLI/API/Config results
+- Subagent research: {Opus findings if spawned}
+- Conclusion: {Accept | Reject with automation path}
+
+ACCEPTANCE CRITERIA:
+Accept blocker only if ALL true:
+1. Automation checklist exhausted
+2. Opus confirmed no automation (if spawned)
+3. Genuinely manual action required (human approval, external access)
+4. Investigation evidence documented
+
+Actions:
+- Automation possible: REJECT with instructions, signal ###REJECTED:{prd-id}:automation_available:{approach}###
+- Automation impossible: Accept with evidence, signal ###BLOCKED:{prd-id}:verified_manual:{reason}###
+</blocker_evaluation>
 
 3. CROSS-POLLINATE OBSERVATIONS
 ACTIVELY use learnings from progress.md:
@@ -153,8 +268,15 @@ Example update:
 Before signaling complete, verify:
 [ ] At least one file was modified (prd.json, progress.md, plan file, or prompt.md)
 [ ] Pending PRDs were verified or rejected (with plans cleaned up)
+  [ ] Git verification performed for ALL pending PRDs
+  [ ] No phantom commits accepted
+  [ ] Working tree cleanliness checked
 [ ] Active PRDs with bailout had plans updated
 [ ] Observations were applied to future PRDs
+[ ] Blockers investigated with automation-first approach
+  [ ] Automation checklist completed
+  [ ] Opus research spawned if needed
+  [ ] Investigation evidence documented
 [ ] No loop risk detected (or mitigated if found)
 
 Signal: ###ANALYSIS_COMPLETE###

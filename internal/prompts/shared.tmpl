@@ -1,0 +1,17 @@
+{{define "file_paths"}}
+<prd_file>.milhouse/prd.json</prd_file>
+<progress_file>.milhouse/progress.md</progress_file>
+<prompt_file>.milhouse/prompt.md</prompt_file>
+<plans_dir>.milhouse/plans/</plans_dir>
+<evidence_dir>.milhouse/evidence/</evidence_dir>
+{{end}}
+
+{{define "prd_shortcuts"}}
+PRD FIELD SHORTCUTS:
+| Field | Values | Meaning |
+|-------|--------|---------|
+| passes | false | Open - needs work |
+| passes | "active" | Being worked on, has plan |
+| passes | "pending" | Claimed done, awaiting review |
+| passes | true | Complete, verified |
+{{end}}
