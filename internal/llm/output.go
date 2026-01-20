@@ -35,9 +35,10 @@ type Signal struct {
 
 // TokenStats tracks token usage during execution
 type TokenStats struct {
-	InputTokens  int
-	OutputTokens int
-	TotalTokens  int
+	InputTokens     int
+	OutputTokens    int
+	TotalTokens     int
+	CacheReadTokens int // Tracks cache read tokens separately (not included in total)
 }
 
 // OutputHandler handles parsed stream events
@@ -47,7 +48,6 @@ type OutputHandler interface {
 	OnDone(result string)
 	OnSignal(signal Signal)
 	OnTokenUsage(usage TokenStats)
-	OnTokenUsageCumulative(usage TokenStats) // For message_delta cumulative counts
 	GetSignals() []Signal
 	GetTokenStats() TokenStats
 	GetOutput() string
@@ -84,8 +84,10 @@ type DeltaContent struct {
 
 // UsageBlock represents token usage data from Claude's output
 type UsageBlock struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	InputTokens         int `json:"input_tokens"`
+	OutputTokens        int `json:"output_tokens"`
+	CacheCreationTokens int `json:"cache_creation_input_tokens"`
+	CacheReadTokens     int `json:"cache_read_input_tokens"`
 }
 
 // ConsoleHandler implements OutputHandler for terminal output
@@ -160,8 +162,8 @@ func (h *ConsoleHandler) OnText(text string) {
 		return          // Don't double-print
 	}
 
-	// Display text with tool count and tokens (fixes empty rows issue)
-	h.display.ClaudeWithTokens(text, h.toolCount, h.tokenStats.TotalTokens, h.tokenThreshold)
+	// Display text with tool count only (tokens shown in final display for accuracy)
+	h.display.ClaudeWithTokens(text, h.toolCount, 0, 0)
 	h.toolCount = 0 // Reset after display
 }
 
@@ -176,13 +178,6 @@ func (h *ConsoleHandler) OnSignal(signal Signal) {
 	// Terminal signals should stop execution
 	if isTerminalSignal(signal) {
 		h.shouldStop = true
-	}
-}
-
-// updateInputTokens updates input tokens (takes max since it's a snapshot)
-func (h *ConsoleHandler) updateInputTokens(input int) {
-	if input > h.tokenStats.InputTokens {
-		h.tokenStats.InputTokens = input
 	}
 }
 
@@ -203,17 +198,10 @@ func (h *ConsoleHandler) recalculateTotalAndCheckThreshold() {
 }
 
 func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
-	h.updateInputTokens(usage.InputTokens)
-	// OutputTokens from events ARE incremental
+	// Simple accumulation like Ralph's implementation
+	h.tokenStats.InputTokens += usage.InputTokens
 	h.tokenStats.OutputTokens += usage.OutputTokens
-	h.recalculateTotalAndCheckThreshold()
-}
-
-func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
-	h.updateInputTokens(usage.InputTokens)
-	if usage.OutputTokens > 0 {
-		h.tokenStats.OutputTokens = usage.OutputTokens
-	}
+	h.tokenStats.CacheReadTokens += usage.CacheReadTokens
 	h.recalculateTotalAndCheckThreshold()
 }
 
@@ -241,7 +229,7 @@ func (h *ConsoleHandler) GetToolCount() int {
 // DisplayFinalTokenUsage forces a final token display regardless of throttling
 func (h *ConsoleHandler) DisplayFinalTokenUsage() {
 	if h.tokenStats.TotalTokens > 0 {
-		h.display.TokenUsage(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens)
+		h.display.TokenUsageDetailed(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens, h.tokenThreshold)
 	}
 }
 
@@ -297,37 +285,20 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 		}
 
 		switch event.Type {
-		case "message_start":
-			// Handle initial input tokens from message_start
-			if event.Message != nil && event.Message.Usage != nil {
-				handler.OnTokenUsage(TokenStats{
-					InputTokens:  event.Message.Usage.InputTokens,
-					OutputTokens: event.Message.Usage.OutputTokens,
-				})
-			}
-
 		case "content_block_delta":
 			if event.Delta != nil && event.Delta.Type == "text_delta" {
 				handler.OnText(event.Delta.Text)
 				checkSignals(event.Delta.Text, handler)
 			}
 
-		case "message_delta":
-			// message_delta provides cumulative output_tokens, not incremental
-			if event.Usage != nil {
-				handler.OnTokenUsageCumulative(TokenStats{
-					InputTokens:  event.Usage.InputTokens,
-					OutputTokens: event.Usage.OutputTokens,
-				})
-			}
-
 		case "assistant":
 			if event.Message != nil {
-				// Parse token usage
+				// Parse token usage from final authoritative counts
 				if event.Message.Usage != nil {
 					handler.OnTokenUsage(TokenStats{
-						InputTokens:  event.Message.Usage.InputTokens,
-						OutputTokens: event.Message.Usage.OutputTokens,
+						InputTokens:     event.Message.Usage.InputTokens,
+						OutputTokens:    event.Message.Usage.OutputTokens,
+						CacheReadTokens: event.Message.Usage.CacheReadTokens,
 					})
 				}
 

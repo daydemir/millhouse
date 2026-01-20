@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.4.7] - 2026-01-20
+
+### Critical Fixes
+- **#58**: Adopted Ralph's token counting logic for accuracy and simplicity
+  - Changed InputTokens from max() to simple accumulation (matches Ralph's proven approach)
+  - Added CacheReadTokens tracking (tracked separately, not included in total)
+  - Removed complex dual-method system (OnTokenUsage + OnTokenUsageCumulative)
+  - Simplified stream parsing to only process tokens from `assistant` event (final authoritative counts)
+  - Token counts now accurately accumulate across multi-turn conversations
+  - Fixed discrepancies between displayed and actual token usage
+
+### Changed
+- `internal/llm/output.go` - Complete token counting refactor:
+  - TokenStats: Added `CacheReadTokens` field
+  - UsageBlock: Added `CacheCreationTokens` and `CacheReadTokens` fields
+  - OnTokenUsage(): Changed to simple accumulation (`InputTokens += usage.InputTokens`)
+  - Removed `updateInputTokens()` method (no longer needed)
+  - Removed `OnTokenUsageCumulative()` method (simplified to single method)
+  - OutputHandler interface: Removed `OnTokenUsageCumulative()` method
+  - ParseStream(): Removed token handling from `message_start` and `message_delta` events
+  - ParseStream(): Now only processes tokens from `assistant` event
+- `internal/llm/output_test.go` - Updated all tests for accumulation behavior:
+  - Renamed `TestOnTokenUsage_InputTokensNotAccumulated` → `TestOnTokenUsage_InputTokensAccumulated`
+  - Renamed `TestOnTokenUsage_TakesMaxInput` → `TestOnTokenUsage_AccumulatesAllTokens`
+  - Removed `TestOnTokenUsageCumulative_TakesMaxInput` (method removed)
+  - Removed `TestOnTokenUsageCumulative_ReplacesOutputTokens` (method removed)
+  - Added `TestOnTokenUsage_CacheReadTokensTracked` (new functionality)
+
+### Improved
+- Token counting accuracy through simple accumulation logic
+- Code maintainability by removing complex dual-method system
+- Reliability by using Claude API's final authoritative token counts
+
+### Technical
+- Token accumulation now matches daydemir-ralph reference implementation
+- CacheReadTokens tracked separately (not included in TotalTokens calculation)
+- Single event source (`assistant`) prevents double-counting and synchronization issues
+- All tests passing with new accumulation behavior
+
+### Breaking Changes
+None - token counting changes are internal implementation details.
+
+### Migration Notes
+No action required. Token counting improvements are transparent to users:
+- Token displays will show accurate accumulated counts
+- CacheReadTokens tracked internally (may be displayed in future release)
+
 ## [0.4.6] - 2026-01-19
 
 ### Added
