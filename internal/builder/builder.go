@@ -133,18 +133,21 @@ func buildBuilderPrompt(basePath string, activePRD *prd.PRD, cfg *config.Config)
 	activePRDJSON, _ := json.MarshalIndent(activePRD, "", "  ")
 	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), phaseConfig.ProgressLines)
 	planContent := readFileContent(prd.GetPlanPath(basePath, activePRD.ID))
+	builderAugmentation := prompts.LoadAugmentation(basePath, "builder")
 
 	return prompts.BuildBuilderPrompt(prompts.BuilderData{
-		PromptMD:        promptMD,
-		ActivePRDJSON:   string(activePRDJSON),
-		PlanContent:     planContent,
-		ProgressContent: progressContent,
-		Timestamp:       time.Now().Format("2006-01-02 15:04"),
+		PromptMD:            promptMD,
+		ActivePRDJSON:       string(activePRDJSON),
+		PlanContent:         planContent,
+		ProgressContent:     progressContent,
+		Timestamp:           time.Now().Format("2006-01-02 15:04"),
+		BuilderAugmentation: builderAugmentation,
 	})
 }
 
 func buildChatPrompt(basePath string, prdFile *prd.PRDFileData) string {
 	open := prdFile.GetOpenPRDs()
+	active := prdFile.GetActivePRDs()
 	pending := prdFile.GetPendingPRDs()
 	complete := prdFile.GetCompletePRDs()
 
@@ -154,13 +157,17 @@ func buildChatPrompt(basePath string, prdFile *prd.PRDFileData) string {
 	progressContent := readFileContent(prd.GetMillhousePath(basePath, prd.ProgressFile))
 	progressLines := len(strings.Split(progressContent, "\n"))
 
+	chatAugmentation := prompts.LoadAugmentation(basePath, "chat")
+
 	return prompts.BuildChatPrompt(prompts.ChatData{
 		TotalPRDs:        len(prdFile.PRDs),
 		OpenPRDs:         len(open),
+		ActivePRDs:       len(active),
 		PendingPRDs:      len(pending),
 		CompletePRDs:     len(complete),
 		ProgressLines:    progressLines,
 		HasPromptContent: hasPromptContent,
+		ChatAugmentation: chatAugmentation,
 	})
 }
 

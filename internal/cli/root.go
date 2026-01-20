@@ -13,7 +13,7 @@ var rootCmd = &cobra.Command{
 	Long: `Milhouse is a CLI tool for autonomous PRD-driven development.
 
 It manages a list of Product Requirements Documents (PRDs) and uses
-Claude to implement them iteratively, with an analyzer agent ensuring
+Claude to implement them iteratively, with a reviewer agent ensuring
 quality and progress between iterations.
 
 Commands:

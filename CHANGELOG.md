@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.4.8] - 2026-01-20
+
+### Fixed
+- **#66**: Display label now shows "[reviewer]" instead of "[analyzer]" during Phase 3
+  - Updated display methods to use "reviewer" terminology consistently
+  - Renamed theme colors from Analyzer* to Reviewer* for clarity
+  - Removed unused `Analysis()` display method
+  - Updated help text and comments to reference "reviewer" agent
+  - Files: internal/display/display.go, internal/display/theme.go, internal/cli/root.go, internal/prd/selector.go
+- **#65**: MillChat now uses PRD helper functions to avoid reading large prd.json files
+  - Added ActivePRDs count to chat context (shows in-progress PRDs)
+  - Updated chat prompt to document available PRD helper functions
+  - Added guidance to avoid reading entire prd.json when unnecessary
+  - Chat now displays: "X total (Y open, Z active, A pending, B complete)"
+  - Files: internal/prompts/prompts.go, internal/builder/builder.go, internal/prompts/chat.tmpl
+
+### Changed
+- Phase 3 Reviewer now displays "[reviewer] Starting review..." instead of "[analyzer] Starting analysis..."
+- Theme field names updated: AnalyzerGutter → ReviewerGutter, AnalyzerText → ReviewerText
+- Gutter constant renamed: GutterAnalyzer → GutterReviewer
+
+### Improved
+- Chat experience by providing better context about PRD states (now shows active PRDs)
+- Chat performance by guiding Claude to use efficient helper functions instead of reading full prd.json
+- Code clarity by using consistent "reviewer" terminology throughout the codebase
+
 ## [0.4.7] - 2026-01-20
 
 ### Critical Fixes

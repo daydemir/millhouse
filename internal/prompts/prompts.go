@@ -92,6 +92,7 @@ func BuildReviewerPrompt(data ReviewerData) string {
 type ChatData struct {
 	TotalPRDs        int
 	OpenPRDs         int
+	ActivePRDs       int
 	PendingPRDs      int
 	CompletePRDs     int
 	ProgressLines    int

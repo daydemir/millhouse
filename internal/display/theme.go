@@ -30,7 +30,7 @@ const (
 // Gutter constants
 const (
 	GutterClaude   = "│"   // For Claude output
-	GutterAnalyzer = "○"   // For analyzer output
+	GutterReviewer = "○"   // For reviewer output
 	GutterCont     = "·"   // For continuation lines
 )
 
@@ -49,9 +49,9 @@ type Theme struct {
 	ClaudeToolBadge *color.Color
 	ClaudeTokens    *color.Color
 
-	// Analyzer colors
-	AnalyzerGutter  *color.Color
-	AnalyzerText    *color.Color
+	// Reviewer colors
+	ReviewerGutter  *color.Color
+	ReviewerText    *color.Color
 
 	// Status colors
 	Success         *color.Color
@@ -83,9 +83,9 @@ func DefaultTheme() *Theme {
 		ClaudeToolBadge: color.New(color.FgBlue),
 		ClaudeTokens:    color.New(color.FgHiBlack),
 
-		// Analyzer - yellow tint
-		AnalyzerGutter:  color.New(color.FgYellow),
-		AnalyzerText:    color.New(color.FgYellow),
+		// Reviewer - yellow tint
+		ReviewerGutter:  color.New(color.FgYellow),
+		ReviewerText:    color.New(color.FgYellow),
 
 		// Status indicators
 		Success:         color.New(color.FgGreen),
@@ -115,8 +115,8 @@ func NoColorTheme() *Theme {
 		ClaudeTimestamp: noColor,
 		ClaudeToolBadge: noColor,
 		ClaudeTokens:    noColor,
-		AnalyzerGutter:  noColor,
-		AnalyzerText:    noColor,
+		ReviewerGutter:  noColor,
+		ReviewerText:    noColor,
 		Success:         noColor,
 		Error:           noColor,
 		Warning:         noColor,

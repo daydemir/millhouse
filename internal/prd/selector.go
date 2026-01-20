@@ -28,7 +28,7 @@ func SelectNext(prdFile *PRDFileData) *PRD {
 	return nil
 }
 
-// SelectNextPending picks a pending PRD for the analyzer to verify
+// SelectNextPending picks a pending PRD for the reviewer to verify
 // Returns nil if no pending PRDs are available
 func SelectNextPending(prdFile *PRDFileData) *PRD {
 	pending := prdFile.GetPendingPRDs()

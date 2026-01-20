@@ -4,7 +4,7 @@ This is a collaborative session - ask questions, make suggestions.
 </context>
 
 <current_state>
-<prd_summary>{{.TotalPRDs}} total ({{.OpenPRDs}} open, {{.PendingPRDs}} pending, {{.CompletePRDs}} complete)</prd_summary>
+<prd_summary>{{.TotalPRDs}} total ({{.OpenPRDs}} open, {{.ActivePRDs}} active, {{.PendingPRDs}} pending, {{.CompletePRDs}} complete)</prd_summary>
 <progress_entries>{{.ProgressLines}} lines</progress_entries>
 <codebase_mapped>{{.HasPromptContent}}</codebase_mapped>
 </current_state>
@@ -17,6 +17,31 @@ This is a collaborative session - ask questions, make suggestions.
 5. Answer questions about project state
 6. Review progress.md for context
 </capabilities>
+
+<prd_helpers>
+CRITICAL: DO NOT read the entire .milhouse/prd.json file directly - it may exceed token limits (>25K tokens).
+Instead, use these helper functions to work with PRDs efficiently:
+
+Available PRD Helper Functions (already exist in the codebase):
+- GetOpenPRDs() - Returns PRDs where passes=false (not started yet)
+- GetActivePRDs() - Returns PRDs where passes="active" (currently being worked on)
+- GetPendingPRDs() - Returns PRDs where passes="pending" (claimed done, awaiting review)
+- GetCompletePRDs() - Returns PRDs where passes=true (verified complete)
+
+PRD State Flow:
+Open (passes=false) → Active (passes="active") → Pending (passes="pending") → Complete (passes=true)
+
+When the user asks about specific PRDs or needs to modify them:
+1. Use the appropriate helper to get a filtered list (much smaller than full prd.json)
+2. Work with the specific PRD objects returned
+3. Make surgical updates to individual PRDs
+4. Avoid reading/parsing the entire prd.json unless absolutely necessary
+
+Example workflow:
+- User: "What PRDs are we working on?" → Use GetActivePRDs()
+- User: "What's left to do?" → Use GetOpenPRDs()
+- User: "What's waiting for review?" → Use GetPendingPRDs()
+</prd_helpers>
 
 <files_editable>
 - .milhouse/prd.json - PRD list

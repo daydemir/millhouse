@@ -146,20 +146,12 @@ func (d *Display) ClaudeStreaming(text string) {
 	d.theme.ClaudeText.Print(text)
 }
 
-// AnalysisStart prints the analyzer start indicator
+// AnalysisStart prints the reviewer start indicator
 func (d *Display) AnalysisStart() {
 	timestamp := time.Now().Format("15:04:05")
 	d.theme.ClaudeTimestamp.Printf("[%s] ", timestamp)
-	d.theme.AnalyzerGutter.Printf("%s ", GutterAnalyzer)
-	d.theme.AnalyzerText.Println("[analyzer] Starting analysis...")
-}
-
-// Analysis prints analyzer output with distinctive gutter
-func (d *Display) Analysis(text string) {
-	timestamp := time.Now().Format("15:04:05")
-	d.theme.ClaudeTimestamp.Printf("[%s] ", timestamp)
-	d.theme.AnalyzerGutter.Printf("%s ", GutterAnalyzer)
-	d.theme.AnalyzerText.Println(CleanText(text))
+	d.theme.ReviewerGutter.Printf("%s ", GutterReviewer)
+	d.theme.ReviewerText.Println("[reviewer] Starting review...")
 }
 
 // Header prints a styled header (backwards compatible)
@@ -237,6 +229,29 @@ func (d *Display) TokenUsage(input, output, total int) {
 	statusColor.Printf("[%s | %s/100K] %s\n", timestamp, tokenStr, SymbolCheck)
 }
 
+// TokenUsageDetailed prints detailed token usage breakdown with input/output stats
+func (d *Display) TokenUsageDetailed(input, output, total, threshold int) {
+	fmt.Println() // Ensure new line after Claude output
+	timestamp := time.Now().Format("15:04:05")
+	percentage := float64(total) / float64(threshold) * 100
+
+	var statusColor = d.theme.Success
+	if percentage > 90 {
+		statusColor = d.theme.Error
+	} else if percentage > 70 {
+		statusColor = d.theme.Warning
+	}
+
+	// Detailed format: [HH:MM:SS | Input=XK Output=YK Total=ZK (XX.X%)] ✓
+	statusColor.Printf("[%s | Input=%.1fK Output=%.1fK Total=%.1fK (%.1f%%)] %s\n",
+		timestamp,
+		float64(input)/1000,
+		float64(output)/1000,
+		float64(total)/1000,
+		percentage,
+		SymbolCheck)
+}
+
 // PRDStatus prints PRD status with color coding
 func (d *Display) PRDStatus(p prd.PRD) {
 	var status string
@@ -311,6 +326,8 @@ func (d *Display) SummaryCompact(open, pending, complete int) {
 func (d *Display) PRDStatusCompact(p prd.PRD) {
 	if p.Passes.IsTrue() {
 		d.theme.Success.Print("  ✓ ")
+	} else if p.Passes.IsPending() {
+		d.theme.Warning.Print("  ⏸ ")
 	} else {
 		d.theme.Dim.Print("  • ")
 	}
@@ -334,12 +351,12 @@ func (d *Display) AgentHeader(agentType, prdID string) {
 	case "builder":
 		d.theme.Info.Printf("[%s]", agentType)
 	case "reviewer":
-		d.theme.AnalyzerText.Printf("[%s]", agentType)
+		d.theme.ReviewerText.Printf("[%s]", agentType)
 	// Legacy support
 	case "executor":
 		d.theme.Info.Printf("[%s]", agentType)
 	case "analyzer":
-		d.theme.AnalyzerText.Printf("[%s]", agentType)
+		d.theme.ReviewerText.Printf("[%s]", agentType)
 	default:
 		fmt.Printf("[%s]", agentType)
 	}
