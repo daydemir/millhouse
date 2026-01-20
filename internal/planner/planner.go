@@ -153,12 +153,14 @@ func buildPlannerPrompt(basePath string, prdFile *prd.PRDFileData, cfg *config.C
 	openPRDs := prdFile.GetOpenPRDs()
 	openPRDsJSON, _ := json.MarshalIndent(openPRDs, "", "  ")
 	progressContent := readLastLines(prd.GetMillhousePath(basePath, prd.ProgressFile), phaseConfig.ProgressLines)
+	plannerAugmentation := prompts.LoadAugmentation(basePath, "planner")
 
 	return prompts.BuildPlannerPrompt(prompts.PlannerData{
-		PromptMD:        promptMD,
-		OpenPRDsJSON:    string(openPRDsJSON),
-		ProgressContent: progressContent,
-		Timestamp:       time.Now().Format("2006-01-02 15:04"),
+		PromptMD:            promptMD,
+		OpenPRDsJSON:        string(openPRDsJSON),
+		ProgressContent:     progressContent,
+		Timestamp:           time.Now().Format("2006-01-02 15:04"),
+		PlannerAugmentation: plannerAugmentation,
 	})
 }
 

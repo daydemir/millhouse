@@ -145,6 +145,53 @@ mil status
 | `mil config edit` | Edit configuration (model, tokens, etc.) |
 | `mil config show` | Display current configuration |
 
+## Prompt Augmentation
+
+Milhouse uses compiled `.tmpl` files for agent prompts, but you can customize agent behavior without rebuilding by using augmentation files.
+
+### Augmentation Files
+
+Located in `.milhouse/prompts/`:
+
+- `planner.md` - Customize planning behavior (e.g., "Always check X before planning Y")
+- `builder.md` - Add build conventions, testing patterns, gotchas
+- `reviewer.md` - Add verification requirements, quality gates
+- `chat.md` - Add project-specific context or shortcuts
+
+### How It Works
+
+1. Base prompts are compiled into the binary (`.tmpl` files in `internal/prompts/`)
+2. Augmentation files are loaded at runtime from `.milhouse/prompts/`
+3. Augmentation content is inserted into the base prompt via `{{.XxxAugmentation}}` placeholders
+4. Changes take effect immediately - no rebuild required
+
+### Example: Builder Augmentation
+
+Edit `.milhouse/prompts/builder.md`:
+
+```markdown
+# Builder Augmentation
+
+## Build & Test Conventions
+- Always run `npm test` before marking work complete
+- Use `npm run typecheck` to validate TypeScript
+
+## Common Gotchas
+- Don't forget to update OpenAPI spec when changing endpoints
+```
+
+### Discoverability
+
+Run `mil init` to create empty augmentation files in `.milhouse/prompts/`.
+The chat agent is aware of this capability and can help you customize the files.
+
+### When to Use Augmentations
+
+- Project-specific patterns not in base templates
+- Temporary constraints (e.g., "Feature X is frozen, don't modify it")
+- Custom verification steps (e.g., "Security changes need threat model")
+- Domain-specific conventions (e.g., "Medical data requires PHI audit")
+
 ## Common Pitfalls
 
 ### False Blockers

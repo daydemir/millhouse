@@ -56,6 +56,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	display.Success("Created .milhouse/evidence/")
 
+	// Create prompts subdirectory
+	promptsPath := filepath.Join(milhousePath, prd.PromptsDir)
+	if err := os.MkdirAll(promptsPath, 0755); err != nil {
+		return fmt.Errorf("failed to create prompts directory: %w", err)
+	}
+	display.Success("Created .milhouse/prompts/")
+
 	// Create empty prd.json
 	prdContent := `{
   "prds": []
@@ -111,8 +118,19 @@ Run 'mil chat' to have Claude help map your codebase.
 	}
 	display.Success("Created .milhouse/prompt.md")
 
+	// Create empty augmentation files (users add content as needed)
+	augmentationFiles := []string{"planner.md", "builder.md", "reviewer.md", "chat.md"}
+	for _, filename := range augmentationFiles {
+		emptyContent := ""
+		if err := os.WriteFile(filepath.Join(promptsPath, filename), []byte(emptyContent), 0644); err != nil {
+			return fmt.Errorf("failed to create %s: %w", filename, err)
+		}
+	}
+	display.Success("Created .milhouse/prompts/ augmentation files")
+
 	display.Info("Run 'mil chat' to add PRDs and map your codebase")
 	display.Info("Run 'mil status' to see PRD status")
+	display.Info("Customize agent behavior by editing .milhouse/prompts/*.md files")
 
 	return nil
 }

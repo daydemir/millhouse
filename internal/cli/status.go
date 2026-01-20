@@ -104,6 +104,19 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		// Show pending PRDs (compact)
+		if len(pending) > 0 {
+			fmt.Println("\nPending Verification:")
+			maxShow := 10
+			for i, p := range pending {
+				if i >= maxShow {
+					fmt.Printf("  + %d more...\n", len(pending)-maxShow)
+					break
+				}
+				display.PRDStatusCompact(p)
+			}
+		}
+
 		// Show complete PRDs (compact)
 		if len(complete) > 0 {
 			fmt.Println("\nComplete:")
