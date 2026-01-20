@@ -27,8 +27,19 @@ func setupTestRepo(t *testing.T) (string, func()) {
 	}
 
 	// Configure git for testing
-	exec.Command("git", "config", "user.email", "test@example.com").Dir = tmpDir
-	exec.Command("git", "config", "user.name", "Test User").Run()
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to config git email: %v", err)
+	}
+
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to config git name: %v", err)
+	}
 
 	return tmpDir, cleanup
 }
