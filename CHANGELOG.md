@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.4.10] - 2026-01-20
+
+### Critical Fixes
+- **Restored Claude CLI stream event handling** - Fixed regression from v0.4.7 where `mil run` stopped working
+  - Restored `message_start` event handler for initial input token counting
+  - Restored `message_delta` event handler for incremental output token updates
+  - Re-added `OnTokenUsageCumulative()` method to OutputHandler interface
+  - Token counting now works correctly with Claude CLI's actual stream-json event format
+  - Planner now successfully creates plans and selects PRDs
+  - Builder now executes plans for active PRDs
+  - Complete planner → builder → reviewer workflow restored
+
+### Root Cause
+- v0.4.7 removed `message_start` and `message_delta` handlers in favor of `assistant` event
+- Claude CLI's `--output-format stream-json` does NOT emit `assistant` events
+- Actual events: `message_start`, `content_block_delta`, `message_delta`, `message_stop`
+- Without proper handlers, token counts stayed at 0 and threshold checking failed
+
+### Changed
+- `internal/llm/output.go`:
+  - Added `message_start` case in ParseStream() - handles initial input tokens
+  - Added `message_delta` case in ParseStream() - handles cumulative output tokens
+  - Restored `OnTokenUsageCumulative()` method - takes max for output tokens, accumulates cache reads
+  - Updated OutputHandler interface with `OnTokenUsageCumulative()` method
+- `internal/llm/output_test.go`:
+  - Added `TestOnTokenUsageCumulative_TakesMaxOutputTokens()` - verifies max() behavior for output tokens
+
+### Technical
+- `message_start` provides snapshot of input tokens (counted once via OnTokenUsage)
+- `message_delta` provides cumulative output tokens (take max via OnTokenUsageCumulative)
+- Cache read tokens accumulate in both methods
+- Maintains improved token counting logic from v0.4.7+ while supporting actual Claude CLI events
+
+### Breaking Changes
+None - internal implementation fix only.
+
+### Migration Notes
+No action required. `mil run` will now work correctly again:
+- Token counts update in real-time during execution
+- Planner creates plans and selects PRDs as expected
+- Builder executes plans for active PRDs
+- Full workflow iterations complete successfully
+
 ## [0.4.8] - 2026-01-20
 
 ### Fixed

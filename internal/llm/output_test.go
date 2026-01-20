@@ -100,3 +100,34 @@ func TestThresholdNotTriggeredBelowLimit(t *testing.T) {
 		t.Error("Expected ShouldTerminate() to return false")
 	}
 }
+
+func TestOnTokenUsageCumulative_TakesMaxOutputTokens(t *testing.T) {
+	handler := NewConsoleHandler()
+
+	// Simulate message_start with initial input tokens
+	handler.OnTokenUsage(TokenStats{InputTokens: 30000, OutputTokens: 0})
+
+	// Simulate message_delta with cumulative output tokens (not incremental)
+	handler.OnTokenUsageCumulative(TokenStats{OutputTokens: 100, CacheReadTokens: 1000})
+	handler.OnTokenUsageCumulative(TokenStats{OutputTokens: 250, CacheReadTokens: 500})
+	handler.OnTokenUsageCumulative(TokenStats{OutputTokens: 300, CacheReadTokens: 300})
+
+	stats := handler.GetTokenStats()
+
+	// InputTokens should remain as initially set
+	if stats.InputTokens != 30000 {
+		t.Errorf("InputTokens should be 30000, got %d", stats.InputTokens)
+	}
+	// OutputTokens should be the max value (300), not sum
+	if stats.OutputTokens != 300 {
+		t.Errorf("OutputTokens should be 300 (max value), got %d", stats.OutputTokens)
+	}
+	// CacheReadTokens should accumulate
+	if stats.CacheReadTokens != 1800 {
+		t.Errorf("CacheReadTokens should be 1800 (accumulated), got %d", stats.CacheReadTokens)
+	}
+	// TotalTokens should be Input + Output
+	if stats.TotalTokens != 30300 {
+		t.Errorf("TotalTokens should be 30300, got %d", stats.TotalTokens)
+	}
+}

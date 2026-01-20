@@ -50,6 +50,7 @@ type OutputHandler interface {
 	OnDone(result string)
 	OnSignal(signal Signal)
 	OnTokenUsage(usage TokenStats)
+	OnTokenUsageCumulative(usage TokenStats) // For message_delta incremental counts
 	GetSignals() []Signal
 	GetTokenStats() TokenStats
 	GetOutput() string
@@ -207,6 +208,18 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 	h.recalculateTotalAndCheckThreshold()
 }
 
+// OnTokenUsageCumulative handles incremental token updates from message_delta
+func (h *ConsoleHandler) OnTokenUsageCumulative(usage TokenStats) {
+	// message_delta provides cumulative output tokens (not incremental)
+	// So we take the max value, not accumulate
+	if usage.OutputTokens > h.tokenStats.OutputTokens {
+		h.tokenStats.OutputTokens = usage.OutputTokens
+	}
+	// Cache read tokens accumulate
+	h.tokenStats.CacheReadTokens += usage.CacheReadTokens
+	h.recalculateTotalAndCheckThreshold()
+}
+
 func (h *ConsoleHandler) GetSignals() []Signal {
 	return h.signals
 }
@@ -289,6 +302,26 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 		}
 
 		switch event.Type {
+		case "message_start":
+			// Handle initial input tokens from message_start
+			if event.Message != nil && event.Message.Usage != nil {
+				handler.OnTokenUsage(TokenStats{
+					InputTokens:     event.Message.Usage.InputTokens,
+					OutputTokens:    0, // No output tokens yet
+					CacheReadTokens: event.Message.Usage.CacheReadTokens,
+				})
+			}
+
+		case "message_delta":
+			// message_delta provides incremental output_tokens
+			if event.Usage != nil {
+				handler.OnTokenUsageCumulative(TokenStats{
+					InputTokens:     0, // Input tokens already counted in message_start
+					OutputTokens:    event.Usage.OutputTokens,
+					CacheReadTokens: event.Usage.CacheReadTokens,
+				})
+			}
+
 		case "content_block_delta":
 			if event.Delta != nil && event.Delta.Type == "text_delta" {
 				handler.OnText(event.Delta.Text)
