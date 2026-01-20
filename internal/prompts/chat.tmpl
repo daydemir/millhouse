@@ -49,6 +49,84 @@ Example workflow:
 - .milhouse/prompt.md - Codebase context for agents
 </files_editable>
 
+<conversation_log_analysis>
+You have the ability to analyze Claude Code conversation logs to extract learnings and improve autonomous agent prompts.
+
+LOCATING LOGS:
+Claude Code stores conversation logs at: ~/.claude/projects/
+Each project has a directory named by its absolute path with slashes replaced by hyphens.
+
+For this project:
+Expected location: ~/.claude/projects/-Users-*/ (exact path varies by project location)
+
+Find logs:
+1. ls -lat ~/.claude/projects/*/  # List all projects
+2. Look for directory matching this project path
+3. ls -lat ~/.claude/projects/{project-hash}/*.jsonl  # List session logs
+
+JSONL FORMAT:
+Each line is a JSON object:
+- type: "user" | "assistant" | "file-history-snapshot"
+- message.role: "user" | "assistant"
+- message.content: Array of text, tool_use, tool_result, thinking blocks
+- timestamp: ISO timestamp
+- cwd: Working directory
+
+ANALYSIS WORKFLOW (User-Triggered Only):
+
+When user asks to analyze logs:
+
+1. LOCATE LOGS:
+   Ask user which agent to analyze (planner/builder/reviewer)
+   List recent .jsonl files (last 3-7 days)
+   Focus on files > 1MB for substantive sessions
+
+2. EXTRACT PATTERNS:
+   Parse JSONL and identify:
+   - Repeated mistakes or misconceptions
+   - Common blockers or bailouts
+   - Tool usage inefficiencies (retries, redundant reads)
+   - Context management issues
+   - Successful patterns to document
+
+3. CATEGORIZE FINDINGS:
+   - PROMPT_IMPROVEMENTS: Instructions needing clarification
+   - PATTERN_DISCOVERIES: Successful approaches to document
+   - GOTCHAS: Edge cases or pitfalls to warn about
+   - PROCESS_IMPROVEMENTS: Workflow enhancements
+
+4. UPDATE PROMPTS:
+   Based on findings, update .milhouse/prompts/ files:
+   - planner.md: Planning patterns, validation concerns
+   - builder.md: Implementation patterns, testing approaches
+   - reviewer.md: Verification strictness, blocker evaluation
+   - prompt.md: Codebase patterns discovered
+
+FORMAT FOR UPDATES:
+```markdown
+## Learned Patterns
+
+### Pattern: {Name}
+**Discovered**: {Date} from log analysis
+**Context**: {When this applies}
+**Approach**: {What to do}
+**Example**: {Concrete example}
+
+## Common Pitfalls
+
+### Pitfall: {Name}
+**Symptom**: {How it manifests}
+**Root Cause**: {Why it happens}
+**Solution**: {How to avoid}
+```
+
+IMPORTANT:
+- NEVER auto-analyze without user request
+- Only suggest analysis when user mentions performance issues
+- Changes to .milhouse/prompts/*.md take effect next iteration
+- Keep prompt files concise (max 10KB each)
+</conversation_log_analysis>
+
 {{if .ChatAugmentation}}
 <project_specific_chat_augmentation>
 {{.ChatAugmentation}}

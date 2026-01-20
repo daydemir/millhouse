@@ -11,6 +11,7 @@ import (
 	"github.com/daydemir/milhouse/internal/builder"
 	"github.com/daydemir/milhouse/internal/config"
 	"github.com/daydemir/milhouse/internal/display"
+	"github.com/daydemir/milhouse/internal/llm"
 	"github.com/daydemir/milhouse/internal/planner"
 	"github.com/daydemir/milhouse/internal/prd"
 	"github.com/daydemir/milhouse/internal/reviewer"
@@ -99,8 +100,15 @@ func runRun(cmd *cobra.Command, args []string) error {
 
 	d.Header(fmt.Sprintf("Milhouse Run (%d iterations)", iterations))
 
+	// Early exit tracking
+	var prevState *IterationState
+	idleCount := 0
+
 	for i := 1; i <= iterations; i++ {
 		d.IterationHeader(i, iterations)
+
+		// Track all signals for this iteration
+		var allSignals []llm.Signal
 
 		// Load fresh PRD state at start of each iteration
 		prdFile, err := prd.Load(cwd)
@@ -138,6 +146,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 
 			// Handle planner signals
 			for _, signal := range planResult.Signals {
+				allSignals = append(allSignals, signal)
 				if signal.Type != "PLAN_COMPLETE" && signal.Type != "PLAN_SKIPPED" {
 					d.Signal(signal.Type, signal.Details)
 				}
@@ -171,6 +180,7 @@ func runRun(cmd *cobra.Command, args []string) error {
 			} else {
 				// Handle builder signals
 				for _, signal := range buildResult.Signals {
+					allSignals = append(allSignals, signal)
 					d.Signal(signal.Type, signal.Details)
 				}
 			}
@@ -197,20 +207,50 @@ func runRun(cmd *cobra.Command, args []string) error {
 			} else {
 				// Handle reviewer signals
 				for _, id := range reviewResult.Verified {
+					allSignals = append(allSignals, llm.Signal{Type: llm.SignalVerified, PRDID: id})
 					d.Signal("VERIFIED", id)
 				}
 				for _, id := range reviewResult.Rejected {
+					allSignals = append(allSignals, llm.Signal{Type: llm.SignalRejected, PRDID: id})
 					d.Signal("REJECTED", id)
 				}
 				for _, id := range reviewResult.PlanUpdated {
+					allSignals = append(allSignals, llm.Signal{Type: llm.SignalPlanUpdated, PRDID: id})
 					d.Signal("PLAN_UPDATED", id)
 				}
 				for _, id := range reviewResult.LoopRisk {
+					allSignals = append(allSignals, llm.Signal{Type: llm.SignalLoopRisk, PRDID: id})
 					d.Warning(fmt.Sprintf("Loop risk detected for PRD: %s", id))
+				}
+				for _, phase := range reviewResult.PromptUpdated {
+					d.Info(fmt.Sprintf("📝 Updated prompt guidance: %s.md", phase))
 				}
 			}
 		} else {
 			d.Info("Reviewer skipped: no PRDs to review")
+		}
+
+		// Check for early exit (if enabled)
+		if cfg.EarlyExit.Enabled {
+			// Reload PRD state to get latest counts
+			prdFile, err = prd.Load(cwd)
+			if err == nil {
+				currentState := CaptureIterationState(prdFile, allSignals)
+
+				// Check for idle iterations
+				if prevState != nil && currentState.Equals(prevState) {
+					idleCount++
+					if idleCount >= cfg.EarlyExit.IdleThreshold {
+						d.Warning(fmt.Sprintf("Early exit: %d consecutive idle iterations", idleCount))
+						d.Info("No state changes detected - work may be blocked or complete")
+						break
+					}
+				} else {
+					idleCount = 0 // Reset on any change
+				}
+
+				prevState = currentState
+			}
 		}
 
 		d.Divider()

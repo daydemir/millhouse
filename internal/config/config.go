@@ -26,19 +26,34 @@ const (
 	// Progress lines limits
 	MinProgressLines = 10
 	MaxProgressLines = 1000
+
+	// Reviewer prompt modes
+	ReviewerPromptModeStandard   = "standard"
+	ReviewerPromptModeEnhanced   = "enhanced"
+	ReviewerPromptModeAggressive = "aggressive"
+
+	// Prompt file size limit
+	MaxPromptFileSize = 10240 // 10KB
 )
 
 // PhaseConfig represents configuration for a specific phase (planner, builder, reviewer)
 type PhaseConfig struct {
-	Model         string `yaml:"model,omitempty"`
-	MaxTokens     int    `yaml:"maxTokens,omitempty"`
-	ProgressLines int    `yaml:"progressLines,omitempty"`
+	Model              string `yaml:"model,omitempty"`
+	MaxTokens          int    `yaml:"maxTokens,omitempty"`
+	ProgressLines      int    `yaml:"progressLines,omitempty"`
+	ReviewerPromptMode string `yaml:"reviewerPromptMode,omitempty"`
 }
 
 // GlobalConfig represents global defaults applied to all phases
 type GlobalConfig struct {
 	Model     string `yaml:"model,omitempty"`
 	MaxTokens int    `yaml:"maxTokens,omitempty"`
+}
+
+// EarlyExitConfig controls early exit behavior when no work is being done
+type EarlyExitConfig struct {
+	Enabled       bool `yaml:"enabled"`
+	IdleThreshold int  `yaml:"idleIterationsThreshold"`
 }
 
 // Config represents the entire configuration structure
@@ -49,8 +64,9 @@ type Config struct {
 		Reviewer PhaseConfig `yaml:"reviewer,omitempty"`
 		Chat     PhaseConfig `yaml:"chat,omitempty"`
 	} `yaml:"phases,omitempty"`
-	Global       GlobalConfig `yaml:"global,omitempty"`
-	ContextFiles []string     `yaml:"contextFiles,omitempty"`
+	Global       GlobalConfig    `yaml:"global,omitempty"`
+	EarlyExit    EarlyExitConfig `yaml:"earlyExit,omitempty"`
+	ContextFiles []string        `yaml:"contextFiles,omitempty"`
 }
 
 // DefaultConfig returns the default configuration matching current hardcoded values
@@ -69,9 +85,10 @@ func DefaultConfig() *Config {
 		ProgressLines: 20,
 	}
 	cfg.Phases.Reviewer = PhaseConfig{
-		Model:         ModelSonnet,
-		MaxTokens:     80000,
-		ProgressLines: 200,
+		Model:              ModelSonnet,
+		MaxTokens:          80000,
+		ProgressLines:      200,
+		ReviewerPromptMode: ReviewerPromptModeStandard,
 	}
 	cfg.Phases.Chat = PhaseConfig{
 		Model: ModelSonnet,
@@ -82,6 +99,12 @@ func DefaultConfig() *Config {
 	cfg.Global = GlobalConfig{
 		Model:     ModelSonnet,
 		MaxTokens: 100000,
+	}
+
+	// Set early exit defaults
+	cfg.EarlyExit = EarlyExitConfig{
+		Enabled:       true,
+		IdleThreshold: 2,
 	}
 
 	return cfg
@@ -192,6 +215,9 @@ func mergeConfigs(base, override *Config) *Config {
 	}
 	if override.Phases.Reviewer.ProgressLines != 0 {
 		result.Phases.Reviewer.ProgressLines = override.Phases.Reviewer.ProgressLines
+	}
+	if override.Phases.Reviewer.ReviewerPromptMode != "" {
+		result.Phases.Reviewer.ReviewerPromptMode = override.Phases.Reviewer.ReviewerPromptMode
 	}
 
 	if override.Phases.Chat.Model != "" {
@@ -317,6 +343,19 @@ func (c *Config) Validate() error {
 		}
 		if p.config.ProgressLines != 0 && (p.config.ProgressLines < MinProgressLines || p.config.ProgressLines > MaxProgressLines) {
 			return fmt.Errorf("invalid %s progressLines %d: must be between %d and %d", p.name, p.config.ProgressLines, MinProgressLines, MaxProgressLines)
+		}
+	}
+
+	// Validate reviewer prompt mode
+	if c.Phases.Reviewer.ReviewerPromptMode != "" {
+		validModes := map[string]bool{
+			ReviewerPromptModeStandard:   true,
+			ReviewerPromptModeEnhanced:   true,
+			ReviewerPromptModeAggressive: true,
+		}
+		if !validModes[c.Phases.Reviewer.ReviewerPromptMode] {
+			return fmt.Errorf("invalid reviewer reviewerPromptMode '%s': must be 'standard', 'enhanced', or 'aggressive'",
+				c.Phases.Reviewer.ReviewerPromptMode)
 		}
 	}
 

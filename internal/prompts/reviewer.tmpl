@@ -37,6 +37,92 @@ Your roles:
 </project_specific_reviewer_augmentation>
 {{end}}
 
+{{if ne .ReviewerPromptMode "standard"}}
+<prompt_improvement_capability>
+MODE: {{.ReviewerPromptMode}}
+
+You can update phase-specific prompt files to improve future agent performance.
+
+<current_prompts>
+<planner_prompt>
+{{if .PlannerPrompt}}{{.PlannerPrompt}}{{else}}[Empty]{{end}}
+</planner_prompt>
+
+<builder_prompt>
+{{if .BuilderPrompt}}{{.BuilderPrompt}}{{else}}[Empty]{{end}}
+</builder_prompt>
+
+<reviewer_prompt>
+{{if .ReviewerPrompt}}{{.ReviewerPrompt}}{{else}}[Empty]{{end}}
+</reviewer_prompt>
+</current_prompts>
+
+WHEN TO UPDATE:
+
+{{if eq .ReviewerPromptMode "enhanced"}}
+ENHANCED MODE:
+- Update when spare context capacity (< 50K tokens used)
+- Pattern repeated across 2+ PRDs
+- Clear inefficiency or improvement identified
+- Consolidate learnings from progress.md
+{{else if eq .ReviewerPromptMode "aggressive"}}
+AGGRESSIVE MODE:
+- Actively improve each iteration
+- Look for ANY improvement opportunities
+- Document patterns from single observations
+- Keep prompts fresh with latest learnings
+{{end}}
+
+HOW TO UPDATE:
+
+1. IDENTIFY OPPORTUNITY:
+   - Pattern repeated in PRD notes
+   - Codebase convention discovered
+   - Gotcha encountered (document resolution)
+   - Testing/verification pattern to standardize
+
+2. CHOOSE TARGET:
+   - planner.md: Architecture, file organization, design
+   - builder.md: Implementation, coding standards, tests
+   - reviewer.md: Verification, quality checks, evidence
+
+3. UPDATE FILE:
+   Write to .milhouse/prompts/{phase}.md:
+   ```markdown
+   ## Codebase Patterns
+   - Pattern description
+
+   ## Common Gotchas
+   - Gotcha and solution
+
+   ## Testing Strategy
+   - Verification approach
+   ```
+
+4. SIGNAL UPDATE:
+   ###PROMPT_UPDATED:{phase}###
+
+SAFEGUARDS:
+
+- MAX SIZE: 10KB per file - consolidate if approaching limit
+- CONSOLIDATION: Merge similar patterns, remove outdated items
+- QUALITY: Specific, actionable guidance only
+- VERIFICATION: Read file back to ensure < 10KB
+
+EXAMPLE:
+
+Write(.milhouse/prompts/planner.md):
+```
+## Configuration Files
+Location: `internal/config/`
+Pattern: Struct in config.go with YAML tags
+Loading: Load(basePath) function
+```
+
+###PROMPT_UPDATED:planner###
+</prompt_improvement_capability>
+{{end}}
+
 <xml_usage_guidance>
 - Parse XML in PRD notes/descriptions when verifying work (check gotchas were addressed, references consulted)
 - Check if Builder's blockers match expected blockers in PRD's XML <blockers> section
@@ -278,6 +364,12 @@ Before signaling complete, verify:
   [ ] Opus research spawned if needed
   [ ] Investigation evidence documented
 [ ] No loop risk detected (or mitigated if found)
+{{if ne .ReviewerPromptMode "standard"}}
+[ ] Prompt improvements considered (if context permits)
+  [ ] Files checked for size (< 10KB)
+  [ ] Consolidation performed if needed
+  [ ] Updates signaled: ###PROMPT_UPDATED:{phase}###
+{{end}}
 
 Signal: ###ANALYSIS_COMPLETE###
 </completion_checklist>

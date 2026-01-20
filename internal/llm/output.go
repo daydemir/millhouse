@@ -24,6 +24,8 @@ const (
 	SignalPlanComplete = "PLAN_COMPLETE"
 	SignalPlanSkipped  = "PLAN_SKIPPED"
 	SignalPlanUpdated  = "PLAN_UPDATED"
+	// Reviewer signals
+	SignalPromptUpdated = "PROMPT_UPDATED"
 )
 
 // Signal represents a detected signal from agent output
@@ -262,6 +264,8 @@ var (
 	planCompletePattern = regexp.MustCompile(`###PLAN_COMPLETE:(.+?)###`)
 	planSkippedPattern  = regexp.MustCompile(`###PLAN_SKIPPED:(.+?)###`)
 	planUpdatedPattern  = regexp.MustCompile(`###PLAN_UPDATED:(.+?)###`)
+	// Reviewer patterns
+	promptUpdatedPattern = regexp.MustCompile(`###PROMPT_UPDATED:(.+?)###`)
 )
 
 // ParseStream reads the Claude stream-json output and calls the handler
@@ -416,6 +420,16 @@ func checkSignals(text string, handler OutputHandler) {
 			handler.OnSignal(Signal{
 				Type:  SignalPlanUpdated,
 				PRDID: strings.TrimSpace(match[1]),
+			})
+		}
+	}
+
+	// Check for PROMPT_UPDATED
+	if matches := promptUpdatedPattern.FindAllStringSubmatch(text, -1); matches != nil {
+		for _, match := range matches {
+			handler.OnSignal(Signal{
+				Type:    SignalPromptUpdated,
+				Details: strings.TrimSpace(match[1]), // phase name
 			})
 		}
 	}

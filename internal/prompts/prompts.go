@@ -77,6 +77,11 @@ type ReviewerData struct {
 	ProgressContent      string            // Last lines of progress.md
 	Iteration            int               // Current iteration count
 	ReviewerAugmentation string            // Optional project-specific reviewer guidance
+	// Prompt improvement fields
+	ReviewerPromptMode   string            // "standard", "enhanced", "aggressive"
+	PlannerPrompt        string            // Content of .milhouse/prompts/planner.md
+	BuilderPrompt        string            // Content of .milhouse/prompts/builder.md
+	ReviewerPrompt       string            // Content of .milhouse/prompts/reviewer.md
 }
 
 // BuildReviewerPrompt renders the reviewer prompt template

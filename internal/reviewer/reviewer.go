@@ -16,11 +16,12 @@ import (
 
 // ReviewerResult contains the result of a reviewer run
 type ReviewerResult struct {
-	Verified    []string // PRD IDs that were verified (promoted to true)
-	Rejected    []string // PRD IDs that were rejected (reverted to false)
-	LoopRisk    []string // PRD IDs at risk of looping
-	PlanUpdated []string // PRD IDs whose plans were updated (bailout handling)
-	Error       error
+	Verified      []string // PRD IDs that were verified (promoted to true)
+	Rejected      []string // PRD IDs that were rejected (reverted to false)
+	LoopRisk      []string // PRD IDs at risk of looping
+	PlanUpdated   []string // PRD IDs whose plans were updated (bailout handling)
+	PromptUpdated []string // Phase names whose prompts were updated
+	Error         error
 }
 
 // Run executes the reviewer agent
@@ -53,6 +54,8 @@ func Run(ctx context.Context, basePath string, prdFile *prd.PRDFileData, iterati
 			result.LoopRisk = append(result.LoopRisk, signal.PRDID)
 		case llm.SignalPlanUpdated:
 			result.PlanUpdated = append(result.PlanUpdated, signal.PRDID)
+		case llm.SignalPromptUpdated:
+			result.PromptUpdated = append(result.PromptUpdated, signal.Details)
 		}
 	}
 
@@ -145,11 +148,23 @@ func buildReviewerPrompt(basePath string, prdFile *prd.PRDFileData, iteration in
 		}
 	}
 
+	reviewerAugmentation := prompts.LoadAugmentation(basePath, "reviewer")
+
+	// Load prompt files for self-improvement capability
+	plannerPrompt := prompts.LoadAugmentation(basePath, "planner")
+	builderPrompt := prompts.LoadAugmentation(basePath, "builder")
+	reviewerPrompt := prompts.LoadAugmentation(basePath, "reviewer")
+
 	return prompts.BuildReviewerPrompt(prompts.ReviewerData{
-		AllPRDsJSON:     string(allPRDsJSON),
-		ActivePlans:     activePlans,
-		ProgressContent: progressContent,
-		Iteration:       iteration,
+		AllPRDsJSON:          string(allPRDsJSON),
+		ActivePlans:          activePlans,
+		ProgressContent:      progressContent,
+		Iteration:            iteration,
+		ReviewerAugmentation: reviewerAugmentation,
+		ReviewerPromptMode:   phaseConfig.ReviewerPromptMode,
+		PlannerPrompt:        plannerPrompt,
+		BuilderPrompt:        builderPrompt,
+		ReviewerPrompt:       reviewerPrompt,
 	})
 }
 
