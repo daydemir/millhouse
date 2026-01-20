@@ -14,6 +14,7 @@ const (
 	PromptFile   = "prompt.md"
 	EvidenceDir  = "evidence"
 	PlansDir     = "plans"
+	PromptsDir   = "prompts"
 )
 
 // PassesStatus represents the quad-state passes field
