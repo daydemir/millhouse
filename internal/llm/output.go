@@ -166,8 +166,8 @@ func (h *ConsoleHandler) OnText(text string) {
 		return          // Don't double-print
 	}
 
-	// Display text with tool count only (tokens shown in final display for accuracy)
-	h.display.ClaudeWithTokens(text, h.toolCount, 0, 0)
+	// Display text with tool count and current token stats
+	h.display.ClaudeWithTokens(text, h.toolCount, h.tokenStats.TotalTokens, h.tokenThreshold)
 	h.toolCount = 0 // Reset after display
 }
 

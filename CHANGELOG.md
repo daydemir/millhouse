@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.4.14] - 2026-01-22
+
+### Fixed
+- **Restored inline token count display in subagent output**
+  - Token counts now appear next to timestamps during streaming (e.g., `[15:04:05] │ [2] [45.3K/100K]`)
+  - Regression from v0.4.7 where inline display was disabled to fix "stale count" concerns
+  - Token stats are actually kept current by stream parser, so inline display is safe
+  - Improves user visibility into token usage during long-running operations
+
+### Root Cause
+- v0.4.7 hardcoded zeros in `ClaudeWithTokens()` call to disable inline display
+- The "stale count" concern was overcautious - token stats are updated before text display
+- Display function checks `if usedTokens > 0 && maxTokens > 0` before showing tokens
+- Zeros caused this check to fail, hiding token counts entirely during streaming
+
+### Changed
+- `internal/llm/output.go` (line 170):
+  - Changed from `h.display.ClaudeWithTokens(text, h.toolCount, 0, 0)`
+  - To `h.display.ClaudeWithTokens(text, h.toolCount, h.tokenStats.TotalTokens, h.tokenThreshold)`
+  - Updated comment to reflect inline token display is now active
+
+### Technical
+- Token stats (`h.tokenStats.TotalTokens`) are updated by `ParseStream()` via:
+  - `OnTokenUsage()` from `message_start` events (initial input tokens)
+  - `OnTokenUsageCumulative()` from `message_delta` events (cumulative output tokens)
+- Both call `recalculateTotalAndCheckThreshold()` which updates `TotalTokens`
+- By the time `OnText()` displays text, token stats reflect latest cumulative counts
+- Display function has safeguards: won't show tokens if values are zero or invalid
+
+### Breaking Changes
+None - display enhancement only, no API or behavior changes.
+
+### Migration Notes
+No action required. Token counts will now be visible during streaming output.
+
 ## [0.4.13] - 2026-01-22
 
 ### Critical Fixes
