@@ -45,7 +45,12 @@ type PlannerData struct {
 // BuildPlannerPrompt renders the planner prompt template
 func BuildPlannerPrompt(data PlannerData) string {
 	var buf bytes.Buffer
-	if err := plannerTmpl.Execute(&buf, data); err != nil {
+	// Must use Lookup to get the specific template, not the cloned base
+	tmpl := plannerTmpl.Lookup("planner.tmpl")
+	if tmpl == nil {
+		return ""
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()
@@ -64,7 +69,12 @@ type BuilderData struct {
 // BuildBuilderPrompt renders the builder prompt template
 func BuildBuilderPrompt(data BuilderData) string {
 	var buf bytes.Buffer
-	if err := builderTmpl.Execute(&buf, data); err != nil {
+	// Must use Lookup to get the specific template, not the cloned base
+	tmpl := builderTmpl.Lookup("builder.tmpl")
+	if tmpl == nil {
+		return ""
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()
@@ -87,7 +97,12 @@ type ReviewerData struct {
 // BuildReviewerPrompt renders the reviewer prompt template
 func BuildReviewerPrompt(data ReviewerData) string {
 	var buf bytes.Buffer
-	if err := reviewerTmpl.Execute(&buf, data); err != nil {
+	// Must use Lookup to get the specific template, not the cloned base
+	tmpl := reviewerTmpl.Lookup("reviewer.tmpl")
+	if tmpl == nil {
+		return ""
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return ""
 	}
 	return buf.String()

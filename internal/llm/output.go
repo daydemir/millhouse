@@ -307,6 +307,26 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 		}
 
 		switch event.Type {
+		case "message_start":
+			if event.Message != nil && event.Message.Usage != nil {
+				handler.OnTokenUsage(TokenStats{
+					InputTokens:         event.Message.Usage.InputTokens,
+					OutputTokens:        0,
+					CacheReadTokens:     event.Message.Usage.CacheReadTokens,
+					CacheCreationTokens: event.Message.Usage.CacheCreationTokens,
+				})
+			}
+
+		case "message_delta":
+			if event.Usage != nil {
+				handler.OnTokenUsageCumulative(TokenStats{
+					InputTokens:         0,
+					OutputTokens:        event.Usage.OutputTokens,
+					CacheReadTokens:     event.Usage.CacheReadTokens,
+					CacheCreationTokens: event.Usage.CacheCreationTokens,
+				})
+			}
+
 		case "content_block_delta":
 			if event.Delta != nil && event.Delta.Type == "text_delta" {
 				handler.OnText(event.Delta.Text)

@@ -111,13 +111,22 @@ func runClaude(ctx context.Context, basePath, prompt string, cfg *config.Config)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
 
 	// Create handler with termination support
 	handler := llm.NewConsoleHandlerWithTerminate(phaseConfig.MaxTokens, cancelExec)
 
 	// Parse the stream
-	llm.ParseStream(reader, handler, cancelExec)
+	if err := llm.ParseStream(reader, handler, cancelExec); err != nil {
+		reader.Close()
+		return nil, fmt.Errorf("stream parsing failed: %w", err)
+	}
+
+	// Close reader and check for process exit errors (e.g., Claude CLI failure)
+	// Note: "signal: killed" is expected when we intentionally terminate after a signal
+	closeErr := reader.Close()
+	if closeErr != nil && !handler.ShouldTerminate() {
+		return nil, fmt.Errorf("claude execution failed: %w", closeErr)
+	}
 
 	fmt.Println() // Ensure newline after output
 	handler.DisplayFinalTokenUsage()
