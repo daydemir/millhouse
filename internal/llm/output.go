@@ -37,10 +37,11 @@ type Signal struct {
 
 // TokenStats tracks token usage during execution
 type TokenStats struct {
-	InputTokens     int
-	OutputTokens    int
-	TotalTokens     int
-	CacheReadTokens int // Tracks cache read tokens separately (not included in total)
+	InputTokens         int
+	OutputTokens        int
+	TotalTokens         int
+	CacheReadTokens     int
+	CacheCreationTokens int
 }
 
 // OutputHandler handles parsed stream events
@@ -186,7 +187,10 @@ func (h *ConsoleHandler) OnSignal(signal Signal) {
 
 // recalculateTotalAndCheckThreshold recalculates total tokens and checks threshold
 func (h *ConsoleHandler) recalculateTotalAndCheckThreshold() {
-	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
+	h.tokenStats.TotalTokens = h.tokenStats.InputTokens +
+		h.tokenStats.OutputTokens +
+		h.tokenStats.CacheReadTokens +
+		h.tokenStats.CacheCreationTokens
 
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
 		h.shouldStop = true
@@ -205,6 +209,7 @@ func (h *ConsoleHandler) OnTokenUsage(usage TokenStats) {
 	h.tokenStats.InputTokens += usage.InputTokens
 	h.tokenStats.OutputTokens += usage.OutputTokens
 	h.tokenStats.CacheReadTokens += usage.CacheReadTokens
+	h.tokenStats.CacheCreationTokens += usage.CacheCreationTokens
 	h.recalculateTotalAndCheckThreshold()
 }
 
@@ -302,26 +307,6 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 		}
 
 		switch event.Type {
-		case "message_start":
-			// Handle initial input tokens from message_start
-			if event.Message != nil && event.Message.Usage != nil {
-				handler.OnTokenUsage(TokenStats{
-					InputTokens:     event.Message.Usage.InputTokens,
-					OutputTokens:    0, // No output tokens yet
-					CacheReadTokens: event.Message.Usage.CacheReadTokens,
-				})
-			}
-
-		case "message_delta":
-			// message_delta provides incremental output_tokens
-			if event.Usage != nil {
-				handler.OnTokenUsageCumulative(TokenStats{
-					InputTokens:     0, // Input tokens already counted in message_start
-					OutputTokens:    event.Usage.OutputTokens,
-					CacheReadTokens: event.Usage.CacheReadTokens,
-				})
-			}
-
 		case "content_block_delta":
 			if event.Delta != nil && event.Delta.Type == "text_delta" {
 				handler.OnText(event.Delta.Text)
@@ -330,14 +315,8 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 
 		case "assistant":
 			if event.Message != nil {
-				// Parse token usage from final authoritative counts
-				if event.Message.Usage != nil {
-					handler.OnTokenUsage(TokenStats{
-						InputTokens:     event.Message.Usage.InputTokens,
-						OutputTokens:    event.Message.Usage.OutputTokens,
-						CacheReadTokens: event.Message.Usage.CacheReadTokens,
-					})
-				}
+				// Note: Token usage in assistant event is often incomplete/incorrect
+				// We rely on the result event for final accurate token counts
 
 				for _, content := range event.Message.Content {
 					switch content.Type {
@@ -351,6 +330,15 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 			}
 
 		case "result":
+			// Parse final token usage from result event (authoritative counts)
+			if event.Usage != nil {
+				handler.OnTokenUsage(TokenStats{
+					InputTokens:         event.Usage.InputTokens,
+					OutputTokens:        event.Usage.OutputTokens,
+					CacheReadTokens:     event.Usage.CacheReadTokens,
+					CacheCreationTokens: event.Usage.CacheCreationTokens,
+				})
+			}
 			// Check for signals in result text
 			checkSignals(event.Result, handler)
 			handler.OnDone(event.Result)

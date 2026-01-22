@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.4.11] - 2026-01-22
+
+### Critical Fixes
+- **Fixed token count display showing ~0.1K when actual usage is ~40K+**
+  - TotalTokens now includes all 4 token types: input, output, cache_read, cache_creation
+  - Added `CacheCreationTokens` field to TokenStats struct
+  - Updated `recalculateTotalAndCheckThreshold()` to include cache tokens in total
+  - Updated `ParseStream()` to capture `cache_creation_input_tokens` from Claude CLI
+  - Updated `OnTokenUsage()` to accumulate CacheCreationTokens
+
+### Root Cause
+- With prompt caching enabled, most tokens come from `cache_read_input_tokens` (~30-50K)
+- Previous calculation only summed `input_tokens` + `output_tokens` (~100-300 total)
+- Result: displayed "0.1K" instead of actual "40K" context usage
+
+### Changed
+- `internal/llm/output.go`:
+  - TokenStats struct: Added `CacheCreationTokens` field
+  - `recalculateTotalAndCheckThreshold()`: Now sums all 4 token types
+  - `OnTokenUsage()`: Now accumulates CacheCreationTokens
+  - `ParseStream()`: Now captures CacheCreationTokens from result event
+- `internal/llm/output_test.go`:
+  - Updated `TestOnTokenUsage_CacheReadTokensTracked()` expectations
+  - Updated `TestOnTokenUsageCumulative_TakesMaxOutputTokens()` expectations
+
+### Technical
+- Token types from Claude CLI with prompt caching:
+  - `input_tokens`: New incremental prompt tokens (~3-10)
+  - `output_tokens`: Generated response tokens (~100-300)
+  - `cache_read_input_tokens`: Tokens read from cache (~30K-50K) - bulk of context
+  - `cache_creation_input_tokens`: Tokens used to create new cache
+- All 4 types now contribute to TotalTokens for accurate threshold checking
+
+### Breaking Changes
+None - token counting changes are internal implementation details.
+
+### Migration Notes
+No action required. Token displays will now show accurate values reflecting actual context usage.
+
 ## [0.4.10] - 2026-01-20
 
 ### Critical Fixes
