@@ -187,10 +187,9 @@ func (h *ConsoleHandler) OnSignal(signal Signal) {
 
 // recalculateTotalAndCheckThreshold recalculates total tokens and checks threshold
 func (h *ConsoleHandler) recalculateTotalAndCheckThreshold() {
-	h.tokenStats.TotalTokens = h.tokenStats.InputTokens +
-		h.tokenStats.OutputTokens +
-		h.tokenStats.CacheReadTokens +
-		h.tokenStats.CacheCreationTokens
+	// Match Ralph: TotalTokens = InputTokens + OutputTokens only
+	// Cache tokens are tracked separately but not included in total
+	h.tokenStats.TotalTokens = h.tokenStats.InputTokens + h.tokenStats.OutputTokens
 
 	if h.tokenStats.TotalTokens >= h.tokenThreshold {
 		h.shouldStop = true
@@ -250,6 +249,8 @@ func (h *ConsoleHandler) GetToolCount() int {
 func (h *ConsoleHandler) DisplayFinalTokenUsage() {
 	if h.tokenStats.TotalTokens > 0 {
 		h.display.TokenUsageDetailed(h.tokenStats.InputTokens, h.tokenStats.OutputTokens, h.tokenStats.TotalTokens, h.tokenThreshold)
+	} else {
+		h.display.Warning("No token data captured")
 	}
 }
 
@@ -335,8 +336,14 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 
 		case "assistant":
 			if event.Message != nil {
-				// Note: Token usage in assistant event is often incomplete/incorrect
-				// We rely on the result event for final accurate token counts
+				// Extract token usage from assistant event (Ralph's proven approach)
+				if event.Message.Usage != nil {
+					handler.OnTokenUsage(TokenStats{
+						InputTokens:     event.Message.Usage.InputTokens,
+						OutputTokens:    event.Message.Usage.OutputTokens,
+						CacheReadTokens: event.Message.Usage.CacheReadTokens,
+					})
+				}
 
 				for _, content := range event.Message.Content {
 					switch content.Type {
@@ -350,16 +357,8 @@ func ParseStream(reader io.Reader, handler OutputHandler, onTerminate func()) er
 			}
 
 		case "result":
-			// Parse final token usage from result event (authoritative counts)
-			if event.Usage != nil {
-				handler.OnTokenUsage(TokenStats{
-					InputTokens:         event.Usage.InputTokens,
-					OutputTokens:        event.Usage.OutputTokens,
-					CacheReadTokens:     event.Usage.CacheReadTokens,
-					CacheCreationTokens: event.Usage.CacheCreationTokens,
-				})
-			}
-			// Check for signals in result text
+			// Token extraction removed - Ralph only extracts from assistant event
+			// Result event was causing double-counting
 			checkSignals(event.Result, handler)
 			handler.OnDone(event.Result)
 		}

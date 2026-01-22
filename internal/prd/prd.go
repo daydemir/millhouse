@@ -1,6 +1,7 @@
 package prd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -111,7 +112,7 @@ type PRDFileData struct {
 	PRDs []PRD `json:"prds"`
 }
 
-// Load reads and parses the prd.json file
+// Load reads and parses the prd.json file with resilient parsing
 func Load(basePath string) (*PRDFileData, error) {
 	path := filepath.Join(basePath, MillhouseDir, PRDFile)
 	data, err := os.ReadFile(path)
@@ -119,12 +120,44 @@ func Load(basePath string) (*PRDFileData, error) {
 		return nil, fmt.Errorf("failed to read prd.json: %w", err)
 	}
 
+	// First, try standard parsing
 	var prdFile PRDFileData
-	if err := json.Unmarshal(data, &prdFile); err != nil {
-		return nil, fmt.Errorf("failed to parse prd.json: %w", err)
+	if err := json.Unmarshal(data, &prdFile); err == nil {
+		return &prdFile, nil
 	}
 
-	return &prdFile, nil
+	// Standard parsing failed - attempt recovery
+	trimmed := bytes.TrimSpace(data)
+
+	// Check if it's a bare array
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		var prds []PRD
+		if err := json.Unmarshal(data, &prds); err != nil {
+			return nil, fmt.Errorf("prd.json appears to be an array but failed to parse: %w", err)
+		}
+
+		// Wrap in proper structure
+		prdFile = PRDFileData{PRDs: prds}
+
+		// Auto-save the fixed version
+		if saveErr := Save(basePath, &prdFile); saveErr != nil {
+			fmt.Printf("Warning: recovered prd.json but failed to save fix: %v\n", saveErr)
+		} else {
+			fmt.Printf("Warning: prd.json was malformed (bare array). Auto-fixed and saved.\n")
+		}
+
+		return &prdFile, nil
+	}
+
+	// Check if it's an empty file
+	if len(trimmed) == 0 {
+		prdFile = PRDFileData{PRDs: []PRD{}}
+		fmt.Printf("Warning: prd.json was empty. Initialized with empty PRDs array.\n")
+		return &prdFile, nil
+	}
+
+	// Unknown format - return original error
+	return nil, fmt.Errorf("failed to parse prd.json: invalid JSON structure (expected object with 'prds' key)")
 }
 
 // Save writes the prd.json file

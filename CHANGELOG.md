@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.4.13] - 2026-01-22
+
+### Critical Fixes
+- **Fixed prd.json parsing failure when LLM corrupts JSON structure**
+  - `Load()` now detects bare arrays `[...]` and auto-wraps in `{"prds": ...}`
+  - Auto-saves the fixed version after recovery
+  - Handles empty files gracefully
+  - Prints warning so user knows recovery happened
+  - Prevents `mil run` and `mil chat` from crashing on malformed prd.json
+
+- **Fixed token counts not displaying after phase completion**
+  - Matched Ralph's proven token counting approach
+  - Extract tokens from `assistant` event (where Ralph gets them)
+  - Removed double-counting from `result` event
+  - Simplified TotalTokens = Input + Output (exclude cache tokens)
+  - Added fallback warning when no token data captured
+
+### Root Cause
+- Token extraction was happening in wrong event (`result`) instead of `assistant`
+- `result` event was double-counting tokens already captured from `message_start`/`message_delta`
+- In some cases, `event.Usage` in result was nil, causing zero tokens
+
+### Changed
+- `internal/prd/prd.go`:
+  - Added `bytes` import for JSON detection
+  - Rewrote `Load()` function with resilient parsing (detects bare arrays, auto-fixes, handles empty files)
+- `internal/llm/output.go`:
+  - Added token extraction from `assistant` event (lines 336-346)
+  - Removed token extraction from `result` event (was causing double-counting)
+  - Changed `recalculateTotalAndCheckThreshold()` to exclude cache tokens from total
+  - Added warning display when no tokens captured in `DisplayFinalTokenUsage()`
+- `internal/llm/output_test.go`:
+  - Updated `TestOnTokenUsage_CacheReadTokensTracked()` - TotalTokens now 65300 (not 77300)
+  - Updated `TestOnTokenUsageCumulative_TakesMaxOutputTokens()` - TotalTokens now 30300 (not 32100)
+
+### Technical
+- Ralph (working reference) only processes `assistant` event for token data
+- Ralph's TotalTokens = InputTokens + OutputTokens (excludes cache)
+- Cache tokens still tracked separately for debugging but not in total
+
+### Breaking Changes
+None - token counting changes are internal implementation details.
+
+### Migration Notes
+No action required. Token displays will now show accurate values after each phase.
+
 ## [0.4.11] - 2026-01-22
 
 ### Critical Fixes

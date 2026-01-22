@@ -79,9 +79,9 @@ func TestOnTokenUsage_CacheReadTokensTracked(t *testing.T) {
 	if stats.CacheReadTokens != 12000 {
 		t.Errorf("CacheReadTokens should be 12000 (accumulated), got %d", stats.CacheReadTokens)
 	}
-	// Total should include all token types (Input + Output + CacheRead + CacheCreation)
-	if stats.TotalTokens != 77300 {
-		t.Errorf("TotalTokens should be 77300 (Input + Output + CacheRead), got %d", stats.TotalTokens)
+	// Total should be Input + Output only (Ralph's approach - cache tokens tracked separately)
+	if stats.TotalTokens != 65300 {
+		t.Errorf("TotalTokens should be 65300 (Input + Output), got %d", stats.TotalTokens)
 	}
 }
 
@@ -126,8 +126,8 @@ func TestOnTokenUsageCumulative_TakesMaxOutputTokens(t *testing.T) {
 	if stats.CacheReadTokens != 1800 {
 		t.Errorf("CacheReadTokens should be 1800 (accumulated), got %d", stats.CacheReadTokens)
 	}
-	// TotalTokens should be Input + Output + CacheRead + CacheCreation
-	if stats.TotalTokens != 32100 {
-		t.Errorf("TotalTokens should be 32100 (Input + Output + CacheRead), got %d", stats.TotalTokens)
+	// TotalTokens should be Input + Output only (Ralph's approach - cache tokens tracked separately)
+	if stats.TotalTokens != 30300 {
+		t.Errorf("TotalTokens should be 30300 (Input + Output), got %d", stats.TotalTokens)
 	}
 }
